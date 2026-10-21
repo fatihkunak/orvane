@@ -9,7 +9,7 @@ export type AnalyticsData = {
 };
 
 /**
- * Numbers Synapse itself knows: what was scheduled, published or failed.
+ * Numbers PostForge itself knows: what was scheduled, published or failed.
  * Reach and engagement need each platform's insights API (extra permissions / app review),
  * so they are intentionally not shown rather than faked.
  */

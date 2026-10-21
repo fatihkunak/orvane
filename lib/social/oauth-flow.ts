@@ -22,7 +22,7 @@ export function baseUrl(req: Request): string {
   return process.env.APP_URL ?? process.env.AUTH_URL ?? new URL(req.url).origin;
 }
 
-const cookieName = (slug: ProviderSlug) => `synapse_oauth_${slug}`;
+const cookieName = (slug: ProviderSlug) => `postforge_oauth_${slug}`;
 const redirectUriFor = (req: Request, slug: ProviderSlug) => `${baseUrl(req)}/api/connect/${slug}/callback`;
 const back = (req: Request, query: string) => NextResponse.redirect(new URL(`/accounts?${query}`, baseUrl(req)));
 

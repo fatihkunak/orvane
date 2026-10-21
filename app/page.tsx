@@ -1,6 +1,7 @@
-import { CalendarClock, Zap } from "lucide-react";
+import { CalendarClock } from "lucide-react";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
+import { LogoMark } from "@/components/layout/logo";
 import { cn } from "@/lib/utils";
 
 /**
@@ -11,10 +12,8 @@ export default function Home() {
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center gap-8 px-4 py-24 text-center">
       <div className="flex items-center gap-3">
-        <span className="bg-brand-gradient shadow-glow grid size-12 place-items-center rounded-2xl">
-          <Zap className="size-6 text-white" fill="currentColor" />
-        </span>
-        <span className="text-4xl font-semibold tracking-tight">Synapse</span>
+        <LogoMark size={56} />
+        <span className="text-4xl font-semibold tracking-tight">PostForge</span>
       </div>
 
       <div className="space-y-3">

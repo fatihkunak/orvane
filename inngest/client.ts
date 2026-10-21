@@ -1,7 +1,7 @@
 import { Inngest } from "inngest";
 
 /** Single Inngest client. Functions are registered in inngest/functions.ts. */
-export const inngest = new Inngest({ id: "synapse" });
+export const inngest = new Inngest({ id: "postforge" });
 
 export const POST_PUBLISH_REQUESTED = "post/publish.requested";
 

@@ -265,7 +265,7 @@ describe("media allow-list (SSRF guard)", () => {
 
   it("accepts only OUR Cloudinary account over https", () => {
     vi.stubEnv("CLOUDINARY_URL", "cloudinary://key:secret@mycloud");
-    expect(isAllowedMediaUrl("https://res.cloudinary.com/mycloud/image/upload/v1/synapse/a.jpg")).toBe(true);
+    expect(isAllowedMediaUrl("https://res.cloudinary.com/mycloud/image/upload/v1/postforge/a.jpg")).toBe(true);
     expect(isAllowedMediaUrl("https://res.cloudinary.com/othercloud/image/upload/a.jpg")).toBe(false);
     expect(isAllowedMediaUrl("http://res.cloudinary.com/mycloud/image/upload/a.jpg")).toBe(false);
     expect(isAllowedMediaUrl("https://res.cloudinary.com.evil.example/mycloud/a.jpg")).toBe(false);

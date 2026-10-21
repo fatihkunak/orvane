@@ -20,7 +20,7 @@ export const NEW_POST_HREF = "/posts/new";
 /** Page title shown in the topbar, falls back to the matching nav label. */
 export function titleForPath(pathname: string): string {
   if (pathname.startsWith(NEW_POST_HREF)) return "Yeni Gönderi";
-  return NAV_ITEMS.find((i) => pathname.startsWith(i.href))?.label ?? "Synapse";
+  return NAV_ITEMS.find((i) => pathname.startsWith(i.href))?.label ?? "PostForge";
 }
 
 export function isActive(pathname: string, href: string): boolean {

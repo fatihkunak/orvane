@@ -133,7 +133,7 @@ export function AnalyticsView({ data }: { data: AnalyticsData }) {
           ))}
         </ul>
         <p className="text-muted-foreground text-xs">
-          Erişim ve etkileşim verileri her platformun analitik API izni gerektirir; şimdilik yalnızca Synapse&apos;in kendi yayın verileri gösteriliyor.
+          Erişim ve etkileşim verileri her platformun analitik API izni gerektirir; şimdilik yalnızca PostForge&apos;un kendi yayın verileri gösteriliyor.
         </p>
       </section>
     </div>

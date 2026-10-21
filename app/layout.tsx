@@ -4,7 +4,7 @@ import { Providers } from "@/components/providers";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
-// Inter is the typeface of the Synapse design board
+// Inter is the typeface of the PostForge design board
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin", "latin-ext"], // latin-ext covers Turkish characters (ı, ş, ğ)
@@ -17,8 +17,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Synapse – Tek içerik. Tüm platformlar.",
-    template: "%s · Synapse",
+    default: "PostForge – Tek içerik. Tüm platformlar.",
+    template: "%s · PostForge",
   },
   description:
     "Threads, LinkedIn ve X hesaplarını bağla; tek yerden gönderi oluştur, planla ve otomatik yayınla.",

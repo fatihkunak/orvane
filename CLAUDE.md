@@ -1,4 +1,4 @@
-# Synapse
+# PostForge
 
 ## ⚠️ WIKI FIRST (MUTLAK KURAL)
 Projeye her başladığında, herhangi bir kod okuma/grep/glob YAPMADAN ÖNCE `docs/wiki/` klasörünü tara (`Index.md` → ilgili node'lar). Proje bilgisi orada. Kod taramaya wiki'den sonra geç. Kesinleşen mimari değişiklikte ilgili node'u güncelle; `node docs/wiki/_build/map-nodes.mjs` ile `map.json`'u yeniden üret.

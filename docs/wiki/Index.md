@@ -1,4 +1,4 @@
-# Synapse — Mimari Wiki
+# PostForge — Mimari Wiki
 
 > Bu wiki, projenin canlı mimari dokümantasyonudur. Her modül bir node'dur.
 > Cross-reference: çift köşeli parantez `[[Node]]` syntax'ı (Obsidian graph view'da gezilebilir).
@@ -7,7 +7,7 @@
 ---
 
 ## 🎯 Genel
-- [[Overview]] — Synapse nedir: Threads/LinkedIn/X için çoklu platform gönderi planlama
+- [[Overview]] — PostForge nedir: Threads/LinkedIn/X için çoklu platform gönderi planlama
 - [[TechStack]] — Next.js App Router, Tailwind v4, shadcn/ui, Prisma, Auth.js, Inngest
 
 ## 🎨 Tasarım
@@ -27,7 +27,7 @@
 - [[Calendar]] — haftalık/aylık takvim, platform filtresi, seçili gün listesi
 - [[Platforms]] — platform meta (etiket, karakter limiti), marka ikonları
 - [[Hydration]] — `useToday` deseni: tarih-bağımlı UI hidrasyon uyuşmazlığı yaşamasın
-- [[Analytics]] — Recharts: günlük gönderi, platform başarı oranı (yalnızca Synapse verisi)
+- [[Analytics]] — Recharts: günlük gönderi, platform başarı oranı (yalnızca PostForge verisi)
 - [[Settings]] — profil + kurulum durumu (hangi env değişkenleri hazır)
 
 ## ✍️ Gönderi & Medya

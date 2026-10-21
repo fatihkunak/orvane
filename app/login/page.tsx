@@ -1,17 +1,15 @@
-import { Zap } from "lucide-react";
 import { signIn } from "@/auth";
 import { Button } from "@/components/ui/button";
+import { LogoMark } from "@/components/layout/logo";
 
 export const metadata = { title: "Giriş yap" };
 
 export default function LoginPage() {
   return (
     <main className="mx-auto flex w-full max-w-sm flex-1 flex-col items-center justify-center gap-8 px-4 py-24 text-center">
-      <span className="bg-brand-gradient shadow-glow grid size-12 place-items-center rounded-2xl">
-        <Zap className="size-6 text-white" fill="currentColor" />
-      </span>
+      <LogoMark size={64} />
       <div className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Synapse&apos;e giriş yap</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">PostForge&apos;a giriş yap</h1>
         <p className="text-muted-foreground text-sm">
           Hesabınla devam et, platformlarını sonra bağlarsın.
         </p>

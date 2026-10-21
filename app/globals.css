@@ -2,7 +2,7 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* Synapse is dark-only: the `dark` class is always set on <html> (see layout.tsx). */
+/* PostForge is dark-only: the `dark` class is always set on <html> (see layout.tsx). */
 @custom-variant dark (&:is(.dark *));
 
 /* -------------------------------------------------------------------------
@@ -47,7 +47,7 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* Synapse brand palette (from the design board) */
+  /* PostForge brand palette (from the design board) */
   --color-brand-purple: #7c5cff;
   --color-brand-blue: #4f8cff;
   --color-brand-pink: #f0479a;
@@ -142,7 +142,7 @@
 }
 
 /* -------------------------------------------------------------------------
- * Reusable Synapse utilities
+ * Reusable PostForge utilities
  * ----------------------------------------------------------------------- */
 
 /* Purple -> blue gradient used for primary buttons and active states */
