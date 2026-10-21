@@ -53,3 +53,5 @@ next-env.d.ts
 
 # local design-tool cache
 .impeccable/
+.inngest.log
+.speckit.log
