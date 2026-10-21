@@ -42,3 +42,7 @@ Platform çağrıları testlerde sahte `fetch` ile doğrulanır; gerçek API'ler
 - Medya adresleri yalnızca bu uygulamanın yüklemeleri ya da kendi Cloudinary hesabın olabilir (SSRF koruması, `lib/media.ts`).
 - Threads medya URL'lerini kendisi indirir; yerel `localhost` dosyaları çalışmaz, Cloudinary gerekir.
 - Erişim/etkileşim metrikleri her platformun analitik API izni gerektirir; Analitik sayfası şimdilik yalnızca Synapse'in kendi yayın verilerini gösterir.
+
+## Lisans
+
+MIT. Ayrıntı için [LICENSE](LICENSE) dosyasına bakın.
