@@ -14,7 +14,7 @@
 - [[DesignSystem]] — koyu tema token'ları (`app/globals.css`), marka renkleri, gradient yardımcıları
 
 ## 🗄️ Veri & Kimlik
-- [[Database]] — Prisma 7 + PostgreSQL şeması, driver adapter, yerel Docker (`synapse-postgres`, :5546)
+- [[Database]] — Prisma 7 + PostgreSQL şeması, driver adapter, yerel Docker (`postforge-postgres`, :5546)
 - [[Auth]] — Auth.js v5: edge-safe `auth.config.ts` + `auth.ts` (Prisma adapter, JWT), `proxy.ts` rota koruması
 
 ## 🧩 Frontend
