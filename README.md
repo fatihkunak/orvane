@@ -1,5 +1,5 @@
 # PostForge
-n<p align="center"><img src="public/logo-full.png" alt="PostForge" width="220"></p>
+<p align="center"><img src="public/logo-full.png" alt="PostForge" width="220"></p>
 
 Tek içerik, tüm platformlar: Threads, LinkedIn ve X hesaplarını bağla; tek yerden gönderi oluştur, planla ve otomatik yayınla.
 
