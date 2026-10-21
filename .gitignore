@@ -55,3 +55,6 @@ next-env.d.ts
 .impeccable/
 .inngest.log
 .speckit.log
+
+# deploy script logs
+/deploy/logs/
