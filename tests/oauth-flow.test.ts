@@ -59,6 +59,9 @@ describe("connect flow", () => {
     const anon = await startConnect(new Request(`${BASE}/api/connect/twitter`), "twitter");
     expect(new URL(anon.headers.get("location")!).pathname).toBe("/login");
 
+    // Don't depend on the developer's real .env having no LinkedIn keys
+    vi.stubEnv("LINKEDIN_CLIENT_ID", "");
+    vi.stubEnv("LINKEDIN_CLIENT_SECRET", "");
     const none = await startConnect(new Request(`${BASE}/api/connect/linkedin`), "linkedin");
     expect(new URL(none.headers.get("location")!).search).toContain("error=not_configured");
   });

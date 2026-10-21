@@ -7,5 +7,5 @@ Kaynak: `prisma/schema.prisma`, `prisma.config.ts`, `lib/prisma.ts`. Üretilen i
 - Modeller: `User`, `SocialAccount` (bağlı Threads/LinkedIn/X; token'lar şifreli saklanacak), `Post`, `PostPlatform` (post↔platform pivot, `@@unique[postId, platform]`). Enum'lar: `Platform`, `PostStatus`, `PostPlatformStatus`.
 - Auth.js modelleri (`Account`, `Session`, `VerificationToken`) giriş kimliği içindir; bağlı sosyal hesaplar `SocialAccount`'tadır, karıştırma. Bkz. [[Auth]].
 - Zamanlayıcı sorgusu `Post @@index([status, scheduledAt])` üzerine kurulu.
-- Yerel DB: Docker `orvane-postgres` (postgres:16, 127.0.0.1:5546, veritabanı `orvane`, volume `synapse-pgdata` — eski ad, volume yeniden adlandırılamadığı için bırakıldı). Kimlik bilgileri `.env`'de.
+- Yerel DB: Docker `orvane-postgres` (postgres:16, 127.0.0.1:5546, veritabanı `orvane`, volume `orvane-pgdata`, rol `orvane`). Kimlik bilgileri `.env`'de.
 - Komutlar: `npm run db:migrate`, `npm run db:studio`.
