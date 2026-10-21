@@ -50,3 +50,6 @@ next-env.d.ts
 
 # local dev uploads (fallback when Cloudinary is not configured)
 /.uploads
+
+# local design-tool cache
+.impeccable/
