@@ -1,0 +1,201 @@
+{
+  "Overview": {
+    "category": "Genel",
+    "paths": [],
+    "missing": [],
+    "noCode": true
+  },
+  "TechStack": {
+    "category": "Genel",
+    "paths": [
+      "package.json"
+    ],
+    "missing": [],
+    "noCode": false
+  },
+  "DesignSystem": {
+    "category": "Tasarım",
+    "paths": [
+      "app/globals.css"
+    ],
+    "missing": [],
+    "noCode": false
+  },
+  "Database": {
+    "category": "Veri & Kimlik",
+    "paths": [
+      "prisma/schema.prisma",
+      "prisma.config.ts",
+      "lib/prisma.ts"
+    ],
+    "missing": [],
+    "noCode": false
+  },
+  "Auth": {
+    "category": "Veri & Kimlik",
+    "paths": [
+      "auth.config.ts",
+      "auth.ts",
+      "proxy.ts",
+      "app/api/auth/[...nextauth]/route.ts",
+      "app/login/page.tsx"
+    ],
+    "missing": [],
+    "noCode": false
+  },
+  "Providers": {
+    "category": "Frontend",
+    "paths": [
+      "components/providers.tsx"
+    ],
+    "missing": [],
+    "noCode": false
+  },
+  "RootLayout": {
+    "category": "Frontend",
+    "paths": [
+      "app/layout.tsx"
+    ],
+    "missing": [],
+    "noCode": false
+  },
+  "Layout": {
+    "category": "Frontend",
+    "paths": [
+      "app/(dashboard)/layout.tsx",
+      "components/layout/nav-items.ts",
+      "components/layout/sidebar.tsx",
+      "components/layout/mobile-nav.tsx",
+      "components/layout/topbar.tsx"
+    ],
+    "missing": [],
+    "noCode": false
+  },
+  "Dashboard": {
+    "category": "Sayfalar",
+    "paths": [
+      "app/(dashboard)/dashboard/page.tsx",
+      "components/dashboard/upcoming-posts.tsx",
+      "components/posts/post-row.tsx"
+    ],
+    "missing": [],
+    "noCode": false
+  },
+  "Calendar": {
+    "category": "Sayfalar",
+    "paths": [
+      "app/(dashboard)/calendar/page.tsx",
+      "components/calendar/calendar-view.tsx"
+    ],
+    "missing": [],
+    "noCode": false
+  },
+  "Platforms": {
+    "category": "Sayfalar",
+    "paths": [
+      "lib/platforms.ts",
+      "components/platform/platform-icon.tsx"
+    ],
+    "missing": [],
+    "noCode": false
+  },
+  "Hydration": {
+    "category": "Sayfalar",
+    "paths": [
+      "lib/use-today.ts",
+      "lib/format.ts"
+    ],
+    "missing": [],
+    "noCode": false
+  },
+  "Analytics": {
+    "category": "Sayfalar",
+    "paths": [
+      "lib/queries/analytics.ts",
+      "components/analytics/analytics-view.tsx",
+      "app/(dashboard)/analytics/page.tsx"
+    ],
+    "missing": [],
+    "noCode": false
+  },
+  "Settings": {
+    "category": "Sayfalar",
+    "paths": [
+      "app/(dashboard)/settings/page.tsx"
+    ],
+    "missing": [],
+    "noCode": false
+  },
+  "Posts": {
+    "category": "Gönderi & Medya",
+    "paths": [
+      "components/posts/create-post-form.tsx",
+      "components/platform/platform-selector.tsx",
+      "lib/validation/post.ts",
+      "lib/char-count.ts",
+      "server/actions/posts.ts",
+      "lib/queries/posts.ts",
+      "lib/post-types.ts"
+    ],
+    "missing": [],
+    "noCode": false
+  },
+  "Media": {
+    "category": "Gönderi & Medya",
+    "paths": [
+      "lib/media.ts",
+      "app/api/upload/route.ts",
+      "app/api/media/[name]/route.ts"
+    ],
+    "missing": [],
+    "noCode": false
+  },
+  "Accounts": {
+    "category": "Entegrasyonlar",
+    "paths": [
+      "lib/social/providers.ts",
+      "lib/social/oauth-flow.ts",
+      "lib/social/tokens.ts",
+      "lib/crypto.ts",
+      "server/actions/accounts.ts",
+      "app/(dashboard)/accounts/page.tsx",
+      "app/api/connect/[provider]/route.ts"
+    ],
+    "missing": [],
+    "noCode": false
+  },
+  "Publishing": {
+    "category": "Entegrasyonlar",
+    "paths": [
+      "lib/publishing.ts",
+      "lib/social/publishers/shared.ts",
+      "lib/social/publishers/twitter.ts",
+      "lib/social/publishers/linkedin.ts",
+      "lib/social/publishers/threads.ts"
+    ],
+    "missing": [],
+    "noCode": false
+  },
+  "Inngest": {
+    "category": "Entegrasyonlar",
+    "paths": [
+      "inngest/client.ts",
+      "inngest/functions.ts",
+      "app/api/inngest/route.ts"
+    ],
+    "missing": [],
+    "noCode": false
+  },
+  "Tests": {
+    "category": "Kalite",
+    "paths": [
+      "vitest.config.mts",
+      "tests/unit.test.ts",
+      "tests/publishers.test.ts",
+      "tests/publishing.test.ts",
+      "tests/oauth-flow.test.ts"
+    ],
+    "missing": [],
+    "noCode": false
+  }
+}

@@ -1,0 +1,13 @@
+# Accounts
+
+Akış: `GET /api/connect/<slug>` (`lib/social/oauth-flow.ts#startConnect`) → platform onayı → `/callback` (`finishConnect`) → `SocialAccount` upsert (`@@unique[userId, provider, platformUserId]`).
+
+- Güvenlik: rastgele `state` + (X için) PKCE verifier, `httpOnly; SameSite=Lax; Path=/api/connect` çerezinde (10 dk). Callback: state eşleşmeli, çerezdeki userId oturumla aynı olmalı, çerez tek kullanımlık (silinir). Eşleşmezse token takası HİÇ yapılmaz.
+- Token'lar `lib/crypto.ts` ile AES-256-GCM (`v1.iv.tag.ct`), `TOKEN_ENCRYPTION_KEY` (32 bayt base64).
+- Sağlayıcılar `lib/social/providers.ts` (uç noktalar resmî dokümandan doğrulandı):
+  - **X**: `x.com/i/oauth2/authorize`, token `api.x.com/2/oauth2/token` (Basic auth), kapsamlar `tweet.read tweet.write users.read media.write offline.access`. Refresh token DÖNER (rotasyon): yenisi mutlaka kaydedilir.
+  - **LinkedIn**: `openid profile w_member_social`; `/v2/userinfo` → `sub` = `urn:li:person:<sub>`. Refresh token yalnız onaylı uygulamalara verilir; yoksa 60 gün sonra yeniden bağlama.
+  - **Threads**: kısa token → `th_exchange_token` ile 60 günlük; `th_refresh_token` ile yenilenir (token ≥24 saat eski olmalı). Redirect URI HTTPS ister.
+- Yenileme: `lib/social/tokens.ts#getAccessToken` (X: süresine <5 dk; LinkedIn: refresh varsa <7 gün; Threads: <7 gün ve >24 saat eski). Yarışta kaybeden, kazananın yazdığı token'ı okur. Ölü token → `ReconnectRequiredError` → kalıcı hata.
+- UI: `app/(dashboard)/accounts/page.tsx`; bağlantıyı kesmek, bekleyen planlı gönderisi olan hesapta reddedilir (`server/actions/accounts.ts`).
+- Yerelde HTTPS gerektiren sağlayıcılar için `APP_URL` ile tünel kullan.
