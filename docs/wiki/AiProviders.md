@@ -1,0 +1,13 @@
+# AiProviders
+
+Gönderi yazımı için **kendi anahtarınla (BYOK)** çalışan çoklu sağlayıcı katmanı. Gramiq backend'i ve Nichevo'daki kayıttan port edildi (aynı kimlikler/varsayılanlar), 19 sağlayıcıya genişletildi.
+
+- **Kayıt:** `lib/ai/providers.ts` (saf TS, istemcide de kullanılır). Gruplar: ücretsiz (Gemini, Groq, OpenRouter, NVIDIA NIM, Mistral, Cerebras), ücretli (Anthropic, OpenAI, Kimi, xAI, DeepSeek, Together, Fireworks), yerel (Ollama, LM Studio, llama.cpp), diğer (EVREN, Alibaba Qwen, OpenAI uyumlu özel adres). Çoğu OpenAI `chat/completions` konuşur, Anthropic kendi Messages API'sini.
+- **Tuzaklar (canlıda bulundu):** EVREN `Authorization: Bearer`'ı yok sayar, `X-API-Key` ister · OpenAI yeni modeller `max_completion_tokens` ister · Gemini geçersiz anahtara 400 döner (iletiden AUTH sayılır) · "düşünen" modeller token'ı önce düşünmeye harcar (varsayılan 4096) ve `<think>` bloğu ayıklanır · Gemini ücretsiz kotası MODEL BAŞINA (yedek modeller yalnız orada; OpenRouter/Groq/Mistral/NVIDIA'da başka modele geçmek kota kazandırmaz).
+- **Model kimlikleri çabuk eskir:** `defaultModel` yalnız başlangıç; `undefined` ise kullanıcı model seçmek ZORUNDA ("Modelleri getir" sağlayıcıdan gerçek listeyi çeker). Doğrulanmamış yeni sağlayıcılarda (Cerebras, Together, Fireworks, xAI, NVIDIA…) varsayılan model yoktur.
+- **Antigravity bilerek yok:** API anahtarı kabul etmez, girişini üçüncü tarafta kullanmak Google şartlarına aykırı. Gemini modellerine AI Studio anahtarıyla ulaşılır.
+- **İstemci:** `lib/ai/client.ts` (`complete`, `listModels`, `checkCreds`; hata sınıflandırma: 401/403 AUTH, 402 PAYMENT, 429 RATE_LIMIT + `retry-after`, 404 model yok, 5xx PROVIDER; zaman aşımı 60 sn; `fetch` enjekte edilebilir, testler gerçek ağa çıkmaz). Hata kodları `lib/ai/errors.ts`.
+- **Güvenlik:** anahtar hata iletilerinden ayıklanır (`redact`). **SSRF**: kullanıcı adresi (özel/Alibaba/yerel) yalnız genel https; `localhost`, özel IP, link-local, `user:pass@` reddedilir (`lib/ai/security.ts`). Yerel sunucular için `ALLOW_PRIVATE_LLM_URLS=1` gerekir: yalnız yerel geliştirmede aç, internete açık kurulumda KAPALI tut (giriş yapan herkes sunucuyu yerel servislerine yönlendirebilir).
+- **Zincir:** `lib/ai/failover.ts`. Sağlayıcıya özgü hata (anahtar, kota, ödeme, kesinti, bozuk çıktı, ayar) → sıradaki yedek; isteğin kendisiyle ilgili hata (`BAD_REQUEST`) → yedeğe geçilmez. Hepsi düşerse İLK hata + deneme izi (`ChainError`). Gemini için model-başına kota yedeği (`withModelFallback`; ≤8 sn bekleme tek kez yeniden denenir).
+
+Bkz. [[AiGeneration]], [[AiSettings]], [[Accounts]] (aynı AES-GCM `lib/crypto.ts`).

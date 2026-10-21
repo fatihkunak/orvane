@@ -28,7 +28,10 @@ const mapping = {
   Accounts: { paths: ['lib/social/providers.ts', 'lib/social/oauth-flow.ts', 'lib/social/tokens.ts', 'lib/crypto.ts', 'server/actions/accounts.ts', 'app/(dashboard)/accounts/page.tsx', 'app/api/connect/[provider]/route.ts'] },
   Publishing: { paths: ['lib/publishing.ts', 'lib/social/publishers/shared.ts', 'lib/social/publishers/twitter.ts', 'lib/social/publishers/linkedin.ts', 'lib/social/publishers/threads.ts'] },
   Inngest: { paths: ['inngest/client.ts', 'inngest/functions.ts', 'app/api/inngest/route.ts'] },
-  Tests: { paths: ['vitest.config.mts', 'tests/unit.test.ts', 'tests/publishers.test.ts', 'tests/publishing.test.ts', 'tests/oauth-flow.test.ts'] },
+  Tests: { paths: ['vitest.config.mts', 'tests/unit.test.ts', 'tests/publishers.test.ts', 'tests/publishing.test.ts', 'tests/oauth-flow.test.ts', 'tests/ai-core.test.ts', 'tests/ai-service.test.ts'] },
+  AiProviders: { paths: ['lib/ai/providers.ts', 'lib/ai/client.ts', 'lib/ai/errors.ts', 'lib/ai/security.ts', 'lib/ai/failover.ts', 'lib/ai/text.ts'] },
+  AiGeneration: { paths: ['components/ai/ai-assistant.tsx', 'lib/ai/prompt.ts', 'lib/ai/service.ts', 'lib/ai/rate-limit.ts', 'server/actions/ai.ts'] },
+  AiSettings: { paths: ['app/(dashboard)/settings/ai/page.tsx', 'components/ai/provider-manager.tsx', 'lib/ai/store.ts', 'components/ui/native-select.tsx'] },
   Auth: { paths: ['auth.config.ts', 'auth.ts', 'proxy.ts', 'app/api/auth/[...nextauth]/route.ts', 'app/login/page.tsx'] },
 };
 

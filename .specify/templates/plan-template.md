@@ -40,9 +40,9 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-Orvane Constitution (v1.0.0) kapıları, her biri geçti/geçmedi + kanıtla işaretlenir:
+Orvane Constitution (v1.1.0) kapıları, her biri geçti/geçmedi + kanıtla işaretlenir:
 
-- [ ] I. Güvenlik: token şifreleme, OAuth state/PKCE, medya URL beyaz listesi, atomik claim, sır
+- [ ] I. Güvenlik: token ve AI anahtarı şifreleme, OAuth state/PKCE, medya + sağlayıcı adresi SSRF denetimi, atomik claim, sır
       sızıntısı yok
 - [ ] II. Dürüst raporlama: gerçek yayın/hesap/ödeme adımları onaya bağlı, doğrulanamayanlar belirtilmiş
 - [ ] III. Test: gerçek Postgres ile `npm test`, `.env`'den bağımsız, tsc + eslint temiz

@@ -6,4 +6,6 @@
 - Sunucu eylemleri `server/actions/posts.ts`: `createPostAction` (platform başına bağlı hesap şart; `now` modunda Inngest olayı gönderir, başarısız olursa cron zaten alır), `deletePostAction` (yalnız sahibi, yayınlanmamış).
 - Okuma: `lib/queries/posts.ts` → `PostDTO` (ISO string) → client `hydratePost`. Takvim ve dashboard artık GERÇEK veri; mock yok. Taslaklar tarihsiz olduğu için takvimde görünmez, dashboard sayısına girer.
 
-Bkz. [[Calendar]], [[Dashboard]], [[Publishing]].
+- **AI ile yaz:** Metin alanının üstündeki panel taslak üretir ([[AiGeneration]]); "Kullan" metni doldurur, yayın yine kullanıcının onayıyla.
+
+Bkz. [[Calendar]], [[Dashboard]], [[Publishing]], [[AiGeneration]].

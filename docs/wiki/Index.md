@@ -34,6 +34,11 @@
 - [[Posts]] — form, doğrulama (zod), sunucu eylemleri, takvim/dashboard sorguları
 - [[Media]] — yükleme (Cloudinary/yerel), SSRF beyaz listesi, dosya imzası
 
+## 🧠 Yapay Zekâ
+- [[AiProviders]] — 19 sağlayıcılı BYOK kaydı, istemci, SSRF koruması, yedek zinciri
+- [[AiGeneration]] — "AI ile yaz" paneli, istem/ayrıştırma, üret → değerlendir → onar hattı
+- [[AiSettings]] — `/settings/ai`: zincir, model listesi, anahtar sınama, şifreli depo
+
 ## 🔌 Entegrasyonlar
 - [[Accounts]] — OAuth bağlama akışı (X PKCE, LinkedIn, Threads), token şifreleme ve yenileme
 - [[Publishing]] — yayıncılar, atomik claim, durum türetme, hata sınıflandırma

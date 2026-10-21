@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AiAssistant, type AiProviderOption } from "@/components/ai/ai-assistant";
 import { PlatformSelector, type ConnectedMap } from "@/components/platform/platform-selector";
 import { PlatformGlyph } from "@/components/platform/platform-icon";
 import { createPostAction } from "@/server/actions/posts";
@@ -24,7 +25,7 @@ const pad = (n: number) => String(n).padStart(2, "0");
 const toDateInput = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const toTimeInput = (d: Date) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 
-export function CreatePostForm({ connected }: { connected: ConnectedMap }) {
+export function CreatePostForm({ connected, aiProviders }: { connected: ConnectedMap; aiProviders: AiProviderOption[] }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const [pending, startTransition] = useTransition();
@@ -127,6 +128,8 @@ export function CreatePostForm({ connected }: { connected: ConnectedMap }) {
             connected={connected}
           />
         </section>
+
+        <AiAssistant providers={aiProviders} platforms={platforms} text={text} onUse={setText} />
 
         <section className="space-y-2">
           <Label htmlFor="post-text">Metin</Label>

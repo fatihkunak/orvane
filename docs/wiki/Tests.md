@@ -8,3 +8,5 @@
 
 Uçtan uca (elle, tarayıcı + Inngest Dev Server): form→olay→yayın→hata kaydı, cron ile zamanlı yayın, silme, yükleme korumaları.
 GOTCHA: `localhost` oturum çerezi Auth.js tarafından HttpOnly yenilenir, JS ile ezilemez; test için `127.0.0.1` kullan (`next.config.ts` → `allowedDevOrigins`, yoksa sayfa hidrate olmaz).
+- `ai-core.test.ts`: sağlayıcı kaydı bütünlüğü ve tuzaklar, SSRF koruması, istek/yanıt biçimleri, HTTP hata sınıflandırma, yedek zinciri, model yedeği, istem ve JSON ayrıştırma (taklit `fetch`).
+- `ai-service.test.ts`: GERÇEK DB; şifreli anahtar deposu, sıralama, SSRF reddi, üretim hattı (yedeğe geçiş, model yedeği, limit aşımı onarımı, anahtar sızıntısı yok), hız sınırı ve gerçek HTTP loopback sunucusuyla uçtan uca. Hiçbiri gerçek sağlayıcıya gitmez.

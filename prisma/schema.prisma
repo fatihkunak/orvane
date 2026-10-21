@@ -58,6 +58,32 @@ model User {
   // Orvane relations
   socialAccounts SocialAccount[]
   posts          Post[]
+  aiProviders    AiProviderConfig[]
+}
+
+/// A user's own LLM provider for AI post writing (bring your own key).
+/// The API key is stored AES-GCM encrypted (see TOKEN_ENCRYPTION_KEY), never plain text,
+/// and is only ever decrypted on the server for the duration of one request.
+model AiProviderConfig {
+  id        String   @id @default(cuid())
+  userId    String
+  /// Registry id from lib/ai/providers.ts ("gemini", "anthropic", "custom", ...)
+  provider  String
+  /// Encrypted key; null for keyless local servers (Ollama, LM Studio, llama.cpp)
+  apiKey    String?  @db.Text
+  /// Only for providers without a fixed address (custom, alibaba) or local servers
+  baseUrl   String?
+  /// Chosen model id; null means the registry default
+  model     String?
+  /// 0 = primary provider, 1.. = backups tried in order when the previous one fails
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, provider])
+  @@index([userId, position])
 }
 
 /// A connected social platform account (Threads / LinkedIn / X).

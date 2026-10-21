@@ -1,4 +1,5 @@
-import { CheckCircle2, CircleAlert } from "lucide-react";
+import Link from "next/link";
+import { CheckCircle2, ChevronRight, CircleAlert, Sparkles } from "lucide-react";
 import { auth } from "@/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PROVIDERS, credentials } from "@/lib/social/providers";
@@ -39,6 +40,17 @@ export default async function SettingsPage() {
           <p className="text-muted-foreground truncate text-sm">{user.email}</p>
         </div>
       </section>
+
+      <Link href="/settings/ai" className="card-surface hover:bg-surface-2 flex items-center gap-3 p-4 transition-colors">
+        <span className="bg-brand-teal/15 text-brand-mist grid size-10 shrink-0 place-items-center rounded-xl">
+          <Sparkles className="size-5" aria-hidden />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-base font-semibold">Yapay zekâ sağlayıcıları</span>
+          <span className="text-muted-foreground block text-sm">Gönderi yazımı için kendi anahtarını ekle, model seç, yedek zinciri kur</span>
+        </span>
+        <ChevronRight className="text-muted-foreground size-4" aria-hidden />
+      </Link>
 
       <section aria-labelledby="setup-title" className="card-surface space-y-3 p-4">
         <h2 id="setup-title" className="text-base font-semibold">

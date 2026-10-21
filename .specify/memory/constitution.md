@@ -1,6 +1,7 @@
 <!--
 Sync Impact Report
-- Version change: (şablon, sürümsüz) → 1.0.0
+- Version change: 1.0.0 → 1.1.0 (MINOR: I. ilkeye yapay zekâ sağlayıcı anahtarları, SSRF ve taslak kuralı eklendi)
+- Önceki sürüm: (şablon, sürümsüz) → 1.0.0
 - Eklenen ilkeler: I. Güvenlik Değişmezleri, II. Dürüst Raporlama ve Onaylı Yayın,
   III. Test Disiplini, IV. Marka ve Tasarım Tutarlılığı, V. Wiki-First ve Tek Kaynak
 - Eklenen bölümler: Teknoloji ve Altyapı Kısıtları, Geliştirme Akışı ve Kalite Kapıları, Governance
@@ -34,6 +35,11 @@ gevşetilemez:
   geçiş, `lib/publishing.ts`) ile engellenir.
 - Sırlar (`.env`, API anahtarları, token'lar, parolalar) MUST asla git'e, loglara, dokümanlara veya
   sohbete yazılmaz; `.env*` dosyaları `.gitignore`'da kalır, yalnızca `.env.example` izlenir.
+- Kullanıcının kendi yapay zekâ sağlayıcı anahtarları (BYOK, `lib/ai/`) MUST aynı şekilde AES-256-GCM
+  ile şifreli saklanır, tarayıcıya geri gönderilmez ve hata iletilerinden ayıklanır. Kullanıcının
+  yazdığı sağlayıcı adresleri MUST SSRF denetiminden geçer (yalnız genel https; yerel adresler
+  yalnızca `ALLOW_PRIVATE_LLM_URLS=1` ile ve internete açık kurulumda KAPALI). Yapay zekâ çıktısı
+  yalnızca taslaktır: kullanıcı onaylamadan hiçbir şey yayınlanmaz (bkz. II).
 
 *Gerekçe: bir sızıntı veya çift gönderim, kullanıcının herkese açık hesabında geri alınamaz hasar
 yaratır.*
@@ -128,4 +134,4 @@ açıkça belirtilip önce anayasa değiştirilir ya da plan düzeltilir.
   ihlallerini kontrol eder. Karmaşıklık veya ihlal gerekçelendirilmeden kabul edilmez.
 - **Çalışma rehberi:** günlük geliştirme bilgisi için `CLAUDE.md` ve `docs/wiki/` kullanılır.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-22 | **Last Amended**: 2026-10-22
+**Version**: 1.1.0 | **Ratified**: 2026-10-22 | **Last Amended**: 2026-10-22

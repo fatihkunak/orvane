@@ -1,0 +1,322 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import Link from "next/link";
+import { toast } from "sonner";
+import { Check, ChevronDown, Copy, Loader2, Sparkles } from "lucide-react";
+import type { Platform } from "@/generated/prisma/enums";
+import { PlatformGlyph } from "@/components/platform/platform-icon";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { LANGUAGES, MAX_BRIEF_CHARS, REWRITE_ACTIONS, TONES, type LanguageCode, type RewriteAction, type Tone } from "@/lib/ai/prompt";
+import type { GenerateResult } from "@/lib/ai/service";
+import { PLATFORMS } from "@/lib/platforms";
+import { cn } from "@/lib/utils";
+import { generatePostAction } from "@/server/actions/ai";
+
+/** A provider the user has set up, as the form needs it for the "use this one first" choice. */
+export type AiProviderOption = { id: string; label: string; model: string | null };
+
+type Mode = "create" | "rewrite";
+
+/**
+ * "Write with AI" panel of the post form. It only ever produces DRAFTS: the user picks one ("Kullan") and edits it in the
+ * normal text box, nothing is published from here.
+ */
+export function AiAssistant({
+  providers,
+  platforms,
+  text,
+  onUse,
+}: {
+  providers: AiProviderOption[];
+  platforms: Platform[];
+  text: string;
+  onUse: (text: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<Mode>("create");
+  const [brief, setBrief] = useState("");
+  const [action, setAction] = useState<RewriteAction>("shorten");
+  const [tone, setTone] = useState<Tone>("friendly");
+  const [language, setLanguage] = useState<LanguageCode>("auto");
+  const [count, setCount] = useState(2);
+  const [emoji, setEmoji] = useState<"none" | "few" | "many">("few");
+  const [hashtags, setHashtags] = useState(true);
+  const [providerId, setProviderId] = useState("");
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<{ message: string; noProvider: boolean } | null>(null);
+  const [result, setResult] = useState<GenerateResult | null>(null);
+  const [copied, setCopied] = useState<number | null>(null);
+
+  const hasText = text.trim().length > 0;
+  const canRun = !pending && (mode === "create" ? brief.trim().length > 0 : hasText);
+
+  function run() {
+    setError(null);
+    startTransition(async () => {
+      const r = await generatePostAction({
+        mode,
+        brief: brief.trim() || undefined,
+        text: mode === "rewrite" ? text : undefined,
+        action: mode === "rewrite" ? action : undefined,
+        tone,
+        language,
+        platforms,
+        count,
+        hashtags: hashtags ? "few" : "none",
+        emoji,
+        providerId: providerId || undefined,
+      });
+      if (!r.ok) {
+        setResult(null);
+        setError({ message: r.error, noProvider: r.code === "NO_PROVIDER" });
+        return;
+      }
+      setResult(r.result);
+    });
+  }
+
+  async function copy(i: number, value: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(i);
+      setTimeout(() => setCopied((c) => (c === i ? null : c)), 1500);
+    } catch {
+      toast.error("Kopyalanamadı");
+    }
+  }
+
+  return (
+    <section className="card-surface overflow-hidden">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls="ai-panel"
+        onClick={() => setOpen((o) => !o)}
+        className="hover:bg-surface-2 flex w-full items-center gap-3 p-4 text-left transition-colors"
+      >
+        <span className="bg-brand-teal/15 text-brand-mist grid size-9 shrink-0 place-items-center rounded-xl">
+          <Sparkles className="size-[18px]" aria-hidden />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold">AI ile yaz</span>
+          <span className="text-muted-foreground block text-xs">Konudan taslak üret ya da mevcut metni iyileştir</span>
+        </span>
+        <ChevronDown className={cn("text-muted-foreground size-4 transition-transform", open && "rotate-180")} aria-hidden />
+      </button>
+
+      {open && (
+        <div id="ai-panel" className="border-border space-y-4 border-t p-4">
+          {providers.length === 0 ? (
+            <p className="text-sm">
+              Henüz bir yapay zekâ sağlayıcısı eklemedin.{" "}
+              <Link href="/settings/ai" className="text-brand-mist font-medium hover:underline">
+                Sağlayıcı ekle
+              </Link>
+            </p>
+          ) : (
+            <>
+              <div role="radiogroup" aria-label="Çalışma biçimi" className="grid grid-cols-2 gap-2">
+                {(
+                  [
+                    ["create", "Sıfırdan yaz"],
+                    ["rewrite", "Mevcut metni iyileştir"],
+                  ] as const
+                ).map(([v, label]) => (
+                  <button
+                    key={v}
+                    type="button"
+                    role="radio"
+                    aria-checked={mode === v}
+                    onClick={() => setMode(v)}
+                    className={cn(
+                      "rounded-xl border px-3 py-2 text-sm font-medium transition-colors",
+                      mode === v ? "border-brand-teal bg-brand-teal/10" : "border-border text-muted-foreground hover:bg-surface-2",
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {mode === "create" ? (
+                <div className="space-y-1.5">
+                  <Label htmlFor="ai-brief">Ne hakkında yazalım?</Label>
+                  <Textarea
+                    id="ai-brief"
+                    value={brief}
+                    onChange={(e) => setBrief(e.target.value)}
+                    maxLength={MAX_BRIEF_CHARS}
+                    rows={3}
+                    placeholder="Örn. Yeni sürümümüzde zamanlanmış gönderiler artık üç platforma birden çıkıyor; kısa ve heyecanlı bir duyuru."
+                    className="bg-surface-2 resize-y"
+                  />
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {!hasText && <p className="text-brand-orange text-xs">Önce aşağıdaki Metin alanına iyileştirilecek bir metin yaz.</p>}
+                  <div role="radiogroup" aria-label="İşlem" className="flex flex-wrap gap-1.5">
+                    {REWRITE_ACTIONS.map((a) => (
+                      <button
+                        key={a.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={action === a.id}
+                        onClick={() => setAction(a.id)}
+                        className={cn(
+                          "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                          action === a.id ? "bg-brand-gradient text-brand-ink" : "bg-surface-2 text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        {a.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="ai-extra">Ek talimat (isteğe bağlı)</Label>
+                    <Input id="ai-extra" value={brief} onChange={(e) => setBrief(e.target.value)} maxLength={MAX_BRIEF_CHARS} placeholder="Örn. daha resmî olsun" className="bg-surface-2 h-9" />
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="ai-tone">Ton</Label>
+                  <NativeSelect id="ai-tone" value={tone} onChange={(e) => setTone(e.target.value as Tone)}>
+                    {TONES.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.label}
+                      </option>
+                    ))}
+                  </NativeSelect>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="ai-lang">Dil</Label>
+                  <NativeSelect id="ai-lang" value={language} onChange={(e) => setLanguage(e.target.value as LanguageCode)}>
+                    {LANGUAGES.map((l) => (
+                      <option key={l.id} value={l.id}>
+                        {l.label}
+                      </option>
+                    ))}
+                  </NativeSelect>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="ai-count">Varyasyon</Label>
+                  <NativeSelect id="ai-count" value={count} onChange={(e) => setCount(Number(e.target.value))}>
+                    {[1, 2, 3].map((n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                  </NativeSelect>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="ai-emoji">Emoji</Label>
+                  <NativeSelect id="ai-emoji" value={emoji} onChange={(e) => setEmoji(e.target.value as "none" | "few" | "many")}>
+                    <option value="none">Yok</option>
+                    <option value="few">Az</option>
+                    <option value="many">Bol</option>
+                  </NativeSelect>
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="ai-provider">Sağlayıcı</Label>
+                  <NativeSelect id="ai-provider" value={providerId} onChange={(e) => setProviderId(e.target.value)}>
+                    <option value="">Otomatik (zincir sırası)</option>
+                    {providers.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.label}
+                        {p.model ? ` · ${p.model}` : ""}
+                      </option>
+                    ))}
+                  </NativeSelect>
+                </div>
+                <div className="flex items-end">
+                  <Label htmlFor="ai-hashtags" className="flex h-9 cursor-pointer items-center gap-2">
+                    <Switch id="ai-hashtags" checked={hashtags} onCheckedChange={setHashtags} />
+                    Hashtag ekle
+                  </Label>
+                </div>
+              </div>
+
+              <p className="text-muted-foreground text-xs">
+                {platforms.length > 0
+                  ? `Seçili platformlara göre en sıkı sınır (${Math.min(...platforms.map((p) => PLATFORMS[p].charLimit))} karakter) hedeflenir.`
+                  : "Platform seçilmedi; 500 karakterlik genel bir sınır hedeflenir."}
+              </p>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <Button type="button" disabled={!canRun} onClick={run} className="bg-brand-gradient text-brand-ink border-0 hover:opacity-90">
+                  {pending ? <Loader2 className="animate-spin" /> : <Sparkles />}
+                  {pending ? "Yazıyor…" : mode === "create" ? "Taslak üret" : "İyileştir"}
+                </Button>
+                <span className="text-muted-foreground text-xs">Üretilenler taslaktır; yayınlamadan önce sen kontrol edersin.</span>
+              </div>
+
+              {error && (
+                <p role="alert" className="text-destructive text-sm">
+                  {error.message}{" "}
+                  {error.noProvider && (
+                    <Link href="/settings/ai" className="text-brand-mist font-medium hover:underline">
+                      Sağlayıcı ekle
+                    </Link>
+                  )}
+                </p>
+              )}
+
+              {result && (
+                <div className="space-y-3" aria-live="polite">
+                  <ul className="space-y-3">
+                    {result.variants.map((v, i) => (
+                      <li key={i} className="bg-surface-2 space-y-3 rounded-xl p-3">
+                        <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">{v.text}</p>
+                        {platforms.length > 0 && (
+                          <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs" aria-label="Karakter sayaçları">
+                            {platforms.map((p) => (
+                              <li key={p} className={cn("flex items-center gap-1.5", v.over.includes(p) ? "text-destructive font-medium" : "text-muted-foreground")}>
+                                <PlatformGlyph platform={p} className="size-3" />
+                                {v.counts[p]}/{PLATFORMS[p].charLimit}
+                                {v.over.includes(p) && " · sınırı aşıyor"}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => {
+                              onUse(v.text);
+                              toast.success("Metne yerleştirildi");
+                            }}
+                          >
+                            Kullan
+                          </Button>
+                          <Button type="button" variant="outline" size="sm" onClick={() => void copy(i, v.text)}>
+                            {copied === i ? <Check /> : <Copy />}
+                            {copied === i ? "Kopyalandı" : "Kopyala"}
+                          </Button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-muted-foreground text-xs">
+                    {result.providerLabel} · {result.model} · {(result.ms / 1000).toFixed(1)} sn
+                    {result.tried.some((t) => !t.ok) && ` · ${result.tried.filter((t) => !t.ok).length} sağlayıcı başarısız oldu, yedek kullanıldı`}
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}

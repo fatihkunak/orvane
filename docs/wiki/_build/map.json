@@ -150,6 +150,42 @@
     "missing": [],
     "noCode": false
   },
+  "AiProviders": {
+    "category": "Yapay Zekâ",
+    "paths": [
+      "lib/ai/providers.ts",
+      "lib/ai/client.ts",
+      "lib/ai/errors.ts",
+      "lib/ai/security.ts",
+      "lib/ai/failover.ts",
+      "lib/ai/text.ts"
+    ],
+    "missing": [],
+    "noCode": false
+  },
+  "AiGeneration": {
+    "category": "Yapay Zekâ",
+    "paths": [
+      "components/ai/ai-assistant.tsx",
+      "lib/ai/prompt.ts",
+      "lib/ai/service.ts",
+      "lib/ai/rate-limit.ts",
+      "server/actions/ai.ts"
+    ],
+    "missing": [],
+    "noCode": false
+  },
+  "AiSettings": {
+    "category": "Yapay Zekâ",
+    "paths": [
+      "app/(dashboard)/settings/ai/page.tsx",
+      "components/ai/provider-manager.tsx",
+      "lib/ai/store.ts",
+      "components/ui/native-select.tsx"
+    ],
+    "missing": [],
+    "noCode": false
+  },
   "Accounts": {
     "category": "Entegrasyonlar",
     "paths": [
@@ -193,7 +229,9 @@
       "tests/unit.test.ts",
       "tests/publishers.test.ts",
       "tests/publishing.test.ts",
-      "tests/oauth-flow.test.ts"
+      "tests/oauth-flow.test.ts",
+      "tests/ai-core.test.ts",
+      "tests/ai-service.test.ts"
     ],
     "missing": [],
     "noCode": false
