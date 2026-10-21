@@ -25,7 +25,7 @@ export function MobileNav() {
         aria-current={active ? "page" : undefined}
         className={cn(
           "flex flex-1 flex-col items-center gap-1 py-2 text-[11px] font-medium transition-colors",
-          active ? "text-brand-blue" : "text-muted-foreground",
+          active ? "text-brand-mist" : "text-muted-foreground",
         )}
       >
         <Icon className="size-5" />
@@ -43,7 +43,7 @@ export function MobileNav() {
       <Link
         href={NEW_POST_HREF}
         aria-label="Yeni gönderi"
-        className="bg-brand-gradient shadow-glow -mt-6 grid size-14 shrink-0 place-items-center rounded-full text-white"
+        className="bg-brand-gradient shadow-glow -mt-6 grid size-14 shrink-0 place-items-center rounded-full text-brand-ink"
       >
         <Plus className="size-6" />
       </Link>

@@ -113,7 +113,7 @@ export function CreatePostForm({ connected }: { connected: ConnectedMap }) {
         {!hasAccounts && (
           <div className="card-surface border-brand-orange/40 text-sm p-4">
             Gönderi oluşturmak için önce en az bir hesap bağlamalısın.{" "}
-            <a href="/accounts" className="text-brand-blue font-medium hover:underline">
+            <a href="/accounts" className="text-brand-mist font-medium hover:underline">
               Hesapları aç
             </a>
           </div>
@@ -226,7 +226,7 @@ export function CreatePostForm({ connected }: { connected: ConnectedMap }) {
                 onClick={() => setWhen(v)}
                 className={cn(
                   "rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors",
-                  when === v ? "border-brand-purple bg-brand-purple/10" : "border-border text-muted-foreground hover:bg-surface-2",
+                  when === v ? "border-brand-teal bg-brand-teal/10" : "border-border text-muted-foreground hover:bg-surface-2",
                 )}
               >
                 {label}
@@ -245,7 +245,7 @@ export function CreatePostForm({ connected }: { connected: ConnectedMap }) {
           <Button
             type="submit"
             disabled={!canSubmit}
-            className="bg-brand-gradient-warm shadow-glow h-11 flex-1 border-0 text-white hover:opacity-90"
+            className="bg-brand-gradient-warm shadow-glow h-11 flex-1 border-0 text-brand-ink hover:opacity-90"
           >
             {pending && <Loader2 className="size-4 animate-spin" />}
             {when === "now" ? "Yayınla" : "Planla"}
@@ -267,7 +267,7 @@ export function CreatePostForm({ connected }: { connected: ConnectedMap }) {
                 type="button"
                 aria-pressed={p === previewPlatform}
                 onClick={() => setPreviewOf(p)}
-                className={cn("rounded-full px-3 py-1 text-xs font-medium", p === previewPlatform ? "bg-brand-gradient text-white" : "bg-surface-2 text-muted-foreground")}
+                className={cn("rounded-full px-3 py-1 text-xs font-medium", p === previewPlatform ? "bg-brand-gradient text-brand-ink" : "bg-surface-2 text-muted-foreground")}
               >
                 {PLATFORMS[p].label}
               </button>

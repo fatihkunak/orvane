@@ -20,7 +20,7 @@ export function Sidebar() {
         href={NEW_POST_HREF}
         className={cn(
           buttonVariants(),
-          "bg-brand-gradient shadow-glow h-11 w-full border-0 text-white hover:opacity-90",
+          "bg-brand-gradient shadow-glow h-11 w-full border-0 text-brand-ink hover:opacity-90",
         )}
       >
         <Plus className="size-4" />
@@ -42,7 +42,7 @@ export function Sidebar() {
                   : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground",
               )}
             >
-              <Icon className={cn("size-[18px]", active && "text-brand-blue")} />
+              <Icon className={cn("size-[18px]", active && "text-brand-mist")} />
               {label}
             </Link>
           );

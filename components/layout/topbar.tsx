@@ -41,7 +41,7 @@ export function Topbar({ user, signOutAction }: TopbarProps) {
         <Button variant="ghost" size="icon" aria-label="Bildirimler" className="relative">
           <Bell className="size-[18px]" />
           {/* Unread dot (placeholder until notifications exist) */}
-          <span className="bg-brand-pink absolute top-2 right-2 size-2 rounded-full" />
+          <span className="bg-brand-mist absolute top-2 right-2 size-2 rounded-full" />
         </Button>
 
         <form action={signOutAction}>
@@ -52,7 +52,7 @@ export function Topbar({ user, signOutAction }: TopbarProps) {
 
         <Avatar className="ml-1 size-9">
           {user.image && <AvatarImage src={user.image} alt={user.name ?? "Profil"} />}
-          <AvatarFallback className="bg-brand-gradient text-sm font-semibold text-white">
+          <AvatarFallback className="bg-brand-gradient text-sm font-semibold text-brand-ink">
             {initials}
           </AvatarFallback>
         </Avatar>

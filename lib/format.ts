@@ -13,7 +13,7 @@ export function formatWhen(d: Date, today: Date): string {
 
 export const STATUS_META: Record<PostStatus, { label: string; className: string }> = {
   DRAFT: { label: "Taslak", className: "bg-muted text-muted-foreground" },
-  SCHEDULED: { label: "Planlandı", className: "bg-brand-blue/15 text-brand-blue" },
+  SCHEDULED: { label: "Planlandı", className: "bg-brand-mist/15 text-brand-mist" },
   PUBLISHED: { label: "Yayınlandı", className: "bg-emerald-500/15 text-emerald-400" },
   FAILED: { label: "Hata", className: "bg-destructive/15 text-destructive" },
 };

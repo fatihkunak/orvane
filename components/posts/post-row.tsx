@@ -32,7 +32,7 @@ export function PostRow({ post, whenLabel }: { post: PostItem; whenLabel: string
           post.hasMedia ? "bg-brand-gradient opacity-80" : "bg-accent",
         )}
       >
-        <ImageIcon className={cn("size-5", post.hasMedia ? "text-white" : "text-muted-foreground")} />
+        <ImageIcon className={cn("size-5", post.hasMedia ? "text-brand-ink" : "text-muted-foreground")} />
       </div>
 
       <div className="min-w-0 flex-1 space-y-1.5">

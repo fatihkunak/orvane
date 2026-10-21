@@ -1,3 +1,4 @@
+import { BRAND } from "@/lib/brand";
 import { BarChart3, CalendarDays, Home, Settings, Users, type LucideIcon } from "lucide-react";
 
 export type NavItem = {
@@ -20,7 +21,7 @@ export const NEW_POST_HREF = "/posts/new";
 /** Page title shown in the topbar, falls back to the matching nav label. */
 export function titleForPath(pathname: string): string {
   if (pathname.startsWith(NEW_POST_HREF)) return "Yeni Gönderi";
-  return NAV_ITEMS.find((i) => pathname.startsWith(i.href))?.label ?? "PostForge";
+  return NAV_ITEMS.find((i) => pathname.startsWith(i.href))?.label ?? BRAND.name;
 }
 
 export function isActive(pathname: string, href: string): boolean {

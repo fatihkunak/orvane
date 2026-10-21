@@ -2,7 +2,7 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* PostForge is dark-only: the `dark` class is always set on <html> (see layout.tsx). */
+/* Orvane is dark-only: the `dark` class is always set on <html> (see layout.tsx). */
 @custom-variant dark (&:is(.dark *));
 
 /* -------------------------------------------------------------------------
@@ -47,13 +47,14 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* PostForge brand palette (from the design board) */
-  --color-brand-purple: #7c5cff;
-  --color-brand-blue: #4f8cff;
-  --color-brand-pink: #f0479a;
-  --color-brand-orange: #ffb072;
-  --color-surface: #111726; /* cards, one step above the background */
-  --color-surface-2: #171e30; /* inputs, hover states */
+  /* Orvane brand palette (from the brand board): navy #0E1B2B, teal #00A896, mist #5EC6C0, cream #F5F4EF, graphite #4A4A4A */
+  --color-brand-teal: #00a896;
+  --color-brand-mist: #5ec6c0;
+  --color-brand-cream: #f5f4ef;
+  --color-brand-ink: #0e1b2b; /* text on teal surfaces (white on teal is too low contrast) */
+  --color-brand-orange: #ffb072; /* warnings only */
+  --color-surface: #0e1b2b; /* cards, one step above the background */
+  --color-surface-2: #14263a; /* inputs, hover states */
 
   /* Platform brand colors, used for icon chips and chart series */
   --color-threads: #ffffff;
@@ -78,37 +79,37 @@
 /* Single (dark) theme. Defined on :root as well so the app is dark even without the class. */
 :root,
 .dark {
-  --background: #0b0f19;
-  --foreground: #f1f4fb;
-  --card: #111726;
-  --card-foreground: #f1f4fb;
-  --popover: #121929;
-  --popover-foreground: #f1f4fb;
-  --primary: #7c5cff;
-  --primary-foreground: #ffffff;
-  --secondary: #171e30;
-  --secondary-foreground: #e4e8f4;
-  --muted: #171e30;
-  --muted-foreground: #8b94ab;
-  --accent: #1c2438;
-  --accent-foreground: #f1f4fb;
+  --background: #09131f;
+  --foreground: #f5f4ef;
+  --card: #0e1b2b;
+  --card-foreground: #f5f4ef;
+  --popover: #0e1b2b;
+  --popover-foreground: #f5f4ef;
+  --primary: #00a896;
+  --primary-foreground: #0e1b2b;
+  --secondary: #14263a;
+  --secondary-foreground: #e6e8e6;
+  --muted: #14263a;
+  --muted-foreground: #97a6b4;
+  --accent: #193049;
+  --accent-foreground: #f5f4ef;
   --destructive: #ff5c72;
   --border: rgb(255 255 255 / 8%);
   --input: rgb(255 255 255 / 10%);
-  --ring: #7c5cff;
-  --chart-1: #7c5cff;
-  --chart-2: #4f8cff;
-  --chart-3: #f0479a;
-  --chart-4: #ffb072;
-  --chart-5: #4b5563;
-  --sidebar: #0d1220;
-  --sidebar-foreground: #f1f4fb;
-  --sidebar-primary: #7c5cff;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #171e30;
-  --sidebar-accent-foreground: #f1f4fb;
+  --ring: #00a896;
+  --chart-1: #00a896;
+  --chart-2: #5ec6c0;
+  --chart-3: #f5f4ef;
+  --chart-4: #7d8a99;
+  --chart-5: #4a4a4a;
+  --sidebar: #0b1724;
+  --sidebar-foreground: #f5f4ef;
+  --sidebar-primary: #00a896;
+  --sidebar-primary-foreground: #0e1b2b;
+  --sidebar-accent: #14263a;
+  --sidebar-accent-foreground: #f5f4ef;
   --sidebar-border: rgb(255 255 255 / 8%);
-  --sidebar-ring: #7c5cff;
+  --sidebar-ring: #00a896;
   color-scheme: dark;
 }
 
@@ -123,10 +124,10 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    /* Soft purple/blue glow at the top, like the hero of the design board */
+    /* Soft teal glow at the top, like the dusk sky of the brand board */
     background-image:
-      radial-gradient(60rem 30rem at 15% -10%, rgb(124 92 255 / 14%), transparent 60%),
-      radial-gradient(50rem 28rem at 95% 0%, rgb(79 140 255 / 10%), transparent 60%);
+      radial-gradient(60rem 30rem at 15% -10%, rgb(0 168 150 / 12%), transparent 60%),
+      radial-gradient(50rem 28rem at 95% 0%, rgb(94 198 192 / 8%), transparent 60%);
     background-attachment: fixed;
   }
 
@@ -142,17 +143,17 @@
 }
 
 /* -------------------------------------------------------------------------
- * Reusable PostForge utilities
+ * Reusable Orvane utilities
  * ----------------------------------------------------------------------- */
 
-/* Purple -> blue gradient used for primary buttons and active states */
+/* Teal -> mist gradient used for primary buttons and active states (pair with text-brand-ink) */
 @utility bg-brand-gradient {
-  background-image: linear-gradient(135deg, #8b5cf6 0%, #4f8cff 100%);
+  background-image: linear-gradient(135deg, #00a896 0%, #5ec6c0 100%);
 }
 
-/* Blue -> pink gradient used for the "Planla" call to action */
+/* Teal -> mist -> cream gradient used for the "Planla" call to action (pair with text-brand-ink) */
 @utility bg-brand-gradient-warm {
-  background-image: linear-gradient(135deg, #4f8cff 0%, #f0479a 100%);
+  background-image: linear-gradient(135deg, #00a896 0%, #5ec6c0 60%, #f5f4ef 130%);
 }
 
 /* Thin-bordered dark card used across the dashboard */
@@ -162,7 +163,7 @@
   border-radius: var(--radius-xl);
 }
 
-/* Purple glow shadow for primary actions */
+/* Teal glow shadow for primary actions */
 @utility shadow-glow {
-  box-shadow: 0 8px 30px -8px rgb(124 92 255 / 55%);
+  box-shadow: 0 8px 30px -8px rgb(0 168 150 / 45%);
 }

@@ -1,10 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
+import { BRAND } from "@/lib/brand";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
-// Inter is the typeface of the PostForge design board
+// Inter carries the UI text; the brand wordmark is an image (public/logo-wordmark.png)
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin", "latin-ext"], // latin-ext covers Turkish characters (ı, ş, ğ)
@@ -17,15 +18,15 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "PostForge – Tek içerik. Tüm platformlar.",
-    template: "%s · PostForge",
+    default: `${BRAND.name} – ${BRAND.tagline}`,
+    template: `%s · ${BRAND.name}`,
   },
   description:
     "Threads, LinkedIn ve X hesaplarını bağla; tek yerden gönderi oluştur, planla ve otomatik yayınla.",
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0b0f19",
+  themeColor: "#0e1b2b",
   colorScheme: "dark",
 };
 

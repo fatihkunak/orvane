@@ -1,13 +1,14 @@
 import Image from "next/image";
 import Link from "next/link";
+import { BRAND } from "@/lib/brand";
 import { cn } from "@/lib/utils";
 
-/** PostForge mark: the transparent "P" from the brand logo (public/logo-mark.png). */
-export function LogoMark({ size = 36, className }: { size?: number; className?: string }) {
+/** Orvane mark: the cream "O" with the teal arrow (public/logo-mark.png, transparent). */
+export function LogoMark({ size = 36, className, alt = BRAND.name }: { size?: number; className?: string; alt?: string }) {
   return (
     <Image
       src="/logo-mark.png"
-      alt="PostForge"
+      alt={alt}
       width={size}
       height={size}
       priority
@@ -16,12 +17,26 @@ export function LogoMark({ size = 36, className }: { size?: number; className?: 
   );
 }
 
-/** PostForge wordmark: logo mark + white text (the colour stays in the mark, never in the text). */
+/** Orvane wordmark image (cream, transparent). The file is 480x72, so the width follows the height. */
+export function Wordmark({ height = 20, className }: { height?: number; className?: string }) {
+  return (
+    <Image
+      src="/logo-wordmark.png"
+      alt={BRAND.name}
+      width={Math.round((height * 480) / 72)}
+      height={height}
+      priority
+      className={cn("shrink-0 select-none", className)}
+    />
+  );
+}
+
+/** Mark + wordmark lockup for the sidebar and top bar. */
 export function Logo({ className }: { className?: string }) {
   return (
-    <Link href="/dashboard" className={cn("flex items-center gap-2.5", className)}>
-      <LogoMark size={36} />
-      <span className="text-xl font-semibold tracking-tight">PostForge</span>
+    <Link href="/dashboard" aria-label={BRAND.name} className={cn("flex items-center gap-2.5", className)}>
+      <LogoMark size={36} alt="" />
+      <Wordmark height={18} />
     </Link>
   );
 }

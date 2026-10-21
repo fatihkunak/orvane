@@ -52,7 +52,7 @@ export default async function DashboardPage() {
         href={NEW_POST_HREF}
         className={cn(
           buttonVariants(),
-          "bg-brand-gradient shadow-glow h-12 w-full border-0 text-white hover:opacity-90 lg:hidden",
+          "bg-brand-gradient shadow-glow h-12 w-full border-0 text-brand-ink hover:opacity-90 lg:hidden",
         )}
       >
         <Plus className="size-4" />
@@ -67,7 +67,7 @@ export default async function DashboardPage() {
         className="card-surface hover:bg-surface-2 flex items-center gap-3 p-4 transition-colors lg:hidden"
       >
         <span className="bg-accent grid size-10 place-items-center rounded-xl">
-          <BarChart3 className="text-brand-blue size-5" />
+          <BarChart3 className="text-brand-mist size-5" />
         </span>
         <span className="flex-1">
           <span className="block text-sm font-semibold">Analitik</span>

@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 const RANGES = [7, 30] as const;
 
 // Hex values mirror the tokens in globals.css (Recharts needs concrete colors)
-const COLORS = { published: "#34d399", scheduled: "#4f8cff", failed: "#ff5c72", axis: "#8b94ab", grid: "rgba(255,255,255,0.06)" };
+const COLORS = { published: "#34d399", scheduled: "#f5f4ef", failed: "#ff5c72", axis: "#97a6b4", grid: "rgba(255,255,255,0.06)" };
 
 export function AnalyticsView({ data }: { data: AnalyticsData }) {
   const today = useToday();
@@ -63,7 +63,7 @@ export function AnalyticsView({ data }: { data: AnalyticsData }) {
             type="button"
             aria-pressed={range === r}
             onClick={() => setRange(r)}
-            className={cn("rounded-md px-3 py-1.5 text-sm font-medium transition-colors", range === r ? "bg-brand-gradient text-white" : "text-muted-foreground hover:text-foreground")}
+            className={cn("rounded-md px-3 py-1.5 text-sm font-medium transition-colors", range === r ? "bg-brand-gradient text-brand-ink" : "text-muted-foreground hover:text-foreground")}
           >
             Son {r} gün
           </button>
@@ -73,7 +73,7 @@ export function AnalyticsView({ data }: { data: AnalyticsData }) {
       <section aria-label="Özet" className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           ["Yayınlanan", totals.published, "text-emerald-400"],
-          ["Planlanan", totals.scheduled, "text-brand-blue"],
+          ["Planlanan", totals.scheduled, "text-brand-cream"],
           ["Başarısız", totals.failed, "text-destructive"],
           ["Başarı oranı", successRate === null ? "—" : `%${successRate}`, "text-foreground"],
         ].map(([label, value, tone]) => (
@@ -97,7 +97,7 @@ export function AnalyticsView({ data }: { data: AnalyticsData }) {
                 <YAxis stroke={COLORS.axis} fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
                 <Tooltip
                   cursor={{ fill: "rgba(255,255,255,0.04)" }}
-                  contentStyle={{ background: "#121929", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, color: "#f1f4fb" }}
+                  contentStyle={{ background: "#0e1b2b", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, color: "#f5f4ef" }}
                 />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
                 <Bar dataKey="published" name="Yayınlanan" stackId="a" fill={COLORS.published} />
@@ -133,7 +133,7 @@ export function AnalyticsView({ data }: { data: AnalyticsData }) {
           ))}
         </ul>
         <p className="text-muted-foreground text-xs">
-          Erişim ve etkileşim verileri her platformun analitik API izni gerektirir; şimdilik yalnızca PostForge&apos;un kendi yayın verileri gösteriliyor.
+          Erişim ve etkileşim verileri her platformun analitik API izni gerektirir; şimdilik yalnızca Orvane&apos;in kendi yayın verileri gösteriliyor.
         </p>
       </section>
     </div>

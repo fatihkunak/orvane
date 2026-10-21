@@ -98,7 +98,7 @@ function CalendarInner({ today, dtos }: { today: Date; dtos: PostDTO[] }) {
               onClick={() => setView(v)}
               className={cn(
                 "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-                view === v ? "bg-brand-gradient text-white" : "text-muted-foreground hover:text-foreground",
+                view === v ? "bg-brand-gradient text-brand-ink" : "text-muted-foreground hover:text-foreground",
               )}
             >
               {v === "week" ? "Haftalık" : "Aylık"}
@@ -203,7 +203,7 @@ function FilterChip({
       className={cn(
         "flex h-8 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-colors",
         active
-          ? "bg-brand-gradient border-transparent text-white"
+          ? "bg-brand-gradient border-transparent text-brand-ink"
           : "border-border text-muted-foreground hover:text-foreground hover:bg-surface-2",
       )}
     >
@@ -235,14 +235,14 @@ function DayButton({
       aria-label={format(day, "d MMMM EEEE", { locale: tr })}
       className={cn(
         "flex flex-col items-center gap-1 rounded-xl py-2 text-xs transition-colors",
-        selected ? "bg-brand-gradient text-white" : "card-surface text-muted-foreground",
+        selected ? "bg-brand-gradient text-brand-ink" : "card-surface text-muted-foreground",
       )}
     >
       <span>{weekday}</span>
-      <span className={cn("text-base font-semibold", !selected && (isToday ? "text-brand-blue" : "text-foreground"))}>
+      <span className={cn("text-base font-semibold", !selected && (isToday ? "text-brand-mist" : "text-foreground"))}>
         {format(day, "d")}
       </span>
-      <span className={cn("size-1.5 rounded-full", count ? (selected ? "bg-white" : "bg-brand-purple") : "bg-transparent")} />
+      <span className={cn("size-1.5 rounded-full", count ? (selected ? "bg-brand-ink" : "bg-brand-teal") : "bg-transparent")} />
     </button>
   );
 }
@@ -263,14 +263,14 @@ function WeekColumn({
   onSelect: () => void;
 }) {
   return (
-    <div className={cn("card-surface flex min-h-56 flex-col", selected && "ring-brand-purple/60 ring-1")}>
+    <div className={cn("card-surface flex min-h-56 flex-col", selected && "ring-brand-teal/60 ring-1")}>
       <button
         type="button"
         onClick={onSelect}
         className="border-border flex items-baseline justify-between border-b px-2.5 py-2 text-left"
       >
         <span className="text-muted-foreground text-xs">{weekday}</span>
-        <span className={cn("text-sm font-semibold", isToday && "bg-brand-gradient rounded-full px-2 py-0.5 text-white")}>
+        <span className={cn("text-sm font-semibold", isToday && "bg-brand-gradient rounded-full px-2 py-0.5 text-brand-ink")}>
           {format(day, "d")}
         </span>
       </button>
@@ -323,7 +323,7 @@ function MonthCell({
       <span
         className={cn(
           "self-start text-xs font-medium",
-          isToday && "bg-brand-gradient grid size-5 place-items-center rounded-full text-white",
+          isToday && "bg-brand-gradient grid size-5 place-items-center rounded-full text-brand-ink",
         )}
       >
         {format(day, "d")}
@@ -331,12 +331,12 @@ function MonthCell({
       {/* Small screens: dots only. md+: first two posts as labels. */}
       <span className="flex gap-0.5 md:hidden">
         {posts.slice(0, 3).map((p) => (
-          <span key={p.id} className="bg-brand-purple size-1.5 rounded-full" />
+          <span key={p.id} className="bg-brand-teal size-1.5 rounded-full" />
         ))}
       </span>
       <span className="hidden flex-col gap-0.5 md:flex">
         {posts.slice(0, 2).map((p) => (
-          <span key={p.id} className="bg-brand-purple/15 text-foreground flex items-center gap-1 truncate rounded px-1 py-0.5 text-[10px]">
+          <span key={p.id} className="bg-brand-teal/15 text-foreground flex items-center gap-1 truncate rounded px-1 py-0.5 text-[10px]">
             <span className="font-medium">{formatTime(p.scheduledAt)}</span>
             <span className="text-muted-foreground truncate">{p.text}</span>
           </span>

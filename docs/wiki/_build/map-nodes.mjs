@@ -1,4 +1,4 @@
-// Wiki node → kod dosyası/dizini mapping builder (PostForge).
+// Wiki node → kod dosyası/dizini mapping builder (Orvane).
 // Çalıştır: node docs/wiki/_build/map-nodes.mjs  → _build/map.json
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';

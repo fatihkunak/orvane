@@ -56,7 +56,7 @@ export default async function AccountsPage({
               </h2>
               {configured ? (
                 // A plain anchor on purpose: this is an API redirect, not a client-side route
-                <a href={`/api/connect/${p.slug}`} className={cn(buttonVariants({ variant: mine.length ? "outline" : "default" }), !mine.length && "bg-brand-gradient border-0 text-white")}>
+                <a href={`/api/connect/${p.slug}`} className={cn(buttonVariants({ variant: mine.length ? "outline" : "default" }), !mine.length && "bg-brand-gradient border-0 text-brand-ink")}>
                   {mine.length ? "Başka hesap ekle" : "Bağla"}
                 </a>
               ) : (

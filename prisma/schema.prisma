@@ -1,4 +1,4 @@
-// PostForge database schema.
+// Orvane database schema.
 // Connection URL lives in prisma.config.ts (Prisma 7), not here.
 
 generator client {
@@ -55,7 +55,7 @@ model User {
   accounts Account[]
   sessions Session[]
 
-  // PostForge relations
+  // Orvane relations
   socialAccounts SocialAccount[]
   posts          Post[]
 }

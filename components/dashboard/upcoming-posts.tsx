@@ -26,7 +26,7 @@ export function UpcomingPosts({ posts, limit = 3 }: { posts: PostDTO[]; limit?: 
         <h2 id="upcoming-title" className="text-base font-semibold">
           Yaklaşan Yayınlar
         </h2>
-        <Link href="/calendar" className="text-brand-blue text-sm font-medium hover:underline">
+        <Link href="/calendar" className="text-brand-mist text-sm font-medium hover:underline">
           Tümünü Gör
         </Link>
       </div>
@@ -42,7 +42,7 @@ export function UpcomingPosts({ posts, limit = 3 }: { posts: PostDTO[]; limit?: 
         <div className="card-surface text-muted-foreground flex flex-col items-center gap-3 px-4 py-10 text-sm">
           <CalendarClock className="size-6" />
           Planlanmış gönderi yok
-          <Link href="/posts/new" className="text-brand-blue font-medium hover:underline">
+          <Link href="/posts/new" className="text-brand-mist font-medium hover:underline">
             İlk gönderini oluştur
           </Link>
         </div>

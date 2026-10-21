@@ -30,7 +30,7 @@ export default async function SettingsPage() {
       <section aria-labelledby="profile-title" className="card-surface flex items-center gap-4 p-4">
         <Avatar className="size-14">
           {user.image && <AvatarImage src={user.image} alt="" />}
-          <AvatarFallback className="bg-brand-gradient text-lg font-semibold text-white">{(user.name ?? "S").slice(0, 1).toUpperCase()}</AvatarFallback>
+          <AvatarFallback className="bg-brand-gradient text-lg font-semibold text-brand-ink">{(user.name ?? "S").slice(0, 1).toUpperCase()}</AvatarFallback>
         </Avatar>
         <div className="min-w-0">
           <h2 id="profile-title" className="truncate text-base font-semibold">

@@ -23,7 +23,7 @@ function cloudinaryConfig() {
 
 async function uploadToCloudinary(file: File, cfg: NonNullable<ReturnType<typeof cloudinaryConfig>>) {
   const timestamp = String(Math.floor(Date.now() / 1000));
-  const folder = "postforge";
+  const folder = "orvane";
   // Signature = sha1 of the sorted "key=value" params (excluding file/api_key) + api secret
   const signature = createHash("sha1").update(`folder=${folder}&timestamp=${timestamp}${cfg.apiSecret}`).digest("hex");
 

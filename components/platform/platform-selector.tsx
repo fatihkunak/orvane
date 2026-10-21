@@ -48,7 +48,7 @@ export function PlatformSelector({ value, onToggle, connected }: Props) {
             onClick={() => onToggle(id)}
             className={cn(
               "flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-sm transition-colors",
-              selected ? "border-brand-purple bg-brand-purple/10" : "border-border hover:bg-surface-2",
+              selected ? "border-brand-teal bg-brand-teal/10" : "border-border hover:bg-surface-2",
             )}
           >
             <PlatformChip platform={id} />
@@ -56,7 +56,7 @@ export function PlatformSelector({ value, onToggle, connected }: Props) {
               <span className="block font-medium">{label}</span>
               {account.username && <span className="text-muted-foreground block truncate text-xs">@{account.username}</span>}
             </span>
-            {selected && <Check className="text-brand-purple size-4 shrink-0" />}
+            {selected && <Check className="text-brand-teal size-4 shrink-0" />}
           </button>
         );
       })}

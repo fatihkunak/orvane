@@ -1,5 +1,5 @@
-# PostForge
-<p align="center"><img src="public/logo-full.png" alt="PostForge" width="220"></p>
+# Orvane
+<p align="center"><img src="public/logo-full.png" alt="Orvane" width="220"></p>
 
 Tek içerik, tüm platformlar: Threads, LinkedIn ve X hesaplarını bağla; tek yerden gönderi oluştur, planla ve otomatik yayınla.
 
@@ -42,7 +42,7 @@ Platform çağrıları testlerde sahte `fetch` ile doğrulanır; gerçek API'ler
 - `prisma` CLI ve `@prisma/client` aynı sürüme sabit (7.10.1); `prisma@latest` şu an 8.0 RC.
 - Medya adresleri yalnızca bu uygulamanın yüklemeleri ya da kendi Cloudinary hesabın olabilir (SSRF koruması, `lib/media.ts`).
 - Threads medya URL'lerini kendisi indirir; yerel `localhost` dosyaları çalışmaz, Cloudinary gerekir.
-- Erişim/etkileşim metrikleri her platformun analitik API izni gerektirir; Analitik sayfası şimdilik yalnızca PostForge'un kendi yayın verilerini gösterir.
+- Erişim/etkileşim metrikleri her platformun analitik API izni gerektirir; Analitik sayfası şimdilik yalnızca Orvane'in kendi yayın verilerini gösterir.
 
 ## Lisans
 

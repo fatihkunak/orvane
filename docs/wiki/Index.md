@@ -1,4 +1,4 @@
-# PostForge — Mimari Wiki
+# Orvane — Mimari Wiki
 
 > Bu wiki, projenin canlı mimari dokümantasyonudur. Her modül bir node'dur.
 > Cross-reference: çift köşeli parantez `[[Node]]` syntax'ı (Obsidian graph view'da gezilebilir).
@@ -7,14 +7,14 @@
 ---
 
 ## 🎯 Genel
-- [[Overview]] — PostForge nedir: Threads/LinkedIn/X için çoklu platform gönderi planlama
+- [[Overview]] — Orvane nedir: Threads/LinkedIn/X için çoklu platform gönderi planlama
 - [[TechStack]] — Next.js App Router, Tailwind v4, shadcn/ui, Prisma, Auth.js, Inngest
 
 ## 🎨 Tasarım
 - [[DesignSystem]] — koyu tema token'ları (`app/globals.css`), marka renkleri, gradient yardımcıları
 
 ## 🗄️ Veri & Kimlik
-- [[Database]] — Prisma 7 + PostgreSQL şeması, driver adapter, yerel Docker (`postforge-postgres`, :5546)
+- [[Database]] — Prisma 7 + PostgreSQL şeması, driver adapter, yerel Docker (`orvane-postgres`, :5546)
 - [[Auth]] — Auth.js v5: edge-safe `auth.config.ts` + `auth.ts` (Prisma adapter, JWT), `proxy.ts` rota koruması
 
 ## 🧩 Frontend
@@ -27,7 +27,7 @@
 - [[Calendar]] — haftalık/aylık takvim, platform filtresi, seçili gün listesi
 - [[Platforms]] — platform meta (etiket, karakter limiti), marka ikonları
 - [[Hydration]] — `useToday` deseni: tarih-bağımlı UI hidrasyon uyuşmazlığı yaşamasın
-- [[Analytics]] — Recharts: günlük gönderi, platform başarı oranı (yalnızca PostForge verisi)
+- [[Analytics]] — Recharts: günlük gönderi, platform başarı oranı (yalnızca Orvane verisi)
 - [[Settings]] — profil + kurulum durumu (hangi env değişkenleri hazır)
 
 ## ✍️ Gönderi & Medya
