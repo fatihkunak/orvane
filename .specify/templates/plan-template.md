@@ -40,7 +40,15 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+Orvane Constitution (v1.0.0) kapıları, her biri geçti/geçmedi + kanıtla işaretlenir:
+
+- [ ] I. Güvenlik: token şifreleme, OAuth state/PKCE, medya URL beyaz listesi, atomik claim, sır
+      sızıntısı yok
+- [ ] II. Dürüst raporlama: gerçek yayın/hesap/ödeme adımları onaya bağlı, doğrulanamayanlar belirtilmiş
+- [ ] III. Test: gerçek Postgres ile `npm test`, `.env`'den bağımsız, tsc + eslint temiz
+- [ ] IV. Marka/tasarım: koyu tema, token'lar `globals.css`'te, ad `lib/brand.ts`'ten, metinde gradient
+      yok, turkuaz yüzeyde `text-brand-ink`
+- [ ] V. Wiki-first: ilgili `docs/wiki` node'ları güncellendi, `map.json` yeniden üretildi
 
 ## Project Structure
 
