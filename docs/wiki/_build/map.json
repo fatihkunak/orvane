@@ -126,9 +126,13 @@
       "lib/update.ts",
       "server/actions/update.ts",
       "components/settings/version-card.tsx",
+      "lib/account.ts",
+      "server/actions/account.ts",
+      "components/settings/delete-account.tsx",
       "deploy/update.cmd",
       "deploy/start-app.cmd",
-      "tests/update.test.ts"
+      "tests/update.test.ts",
+      "tests/account-deletion.test.ts"
     ],
     "missing": [],
     "noCode": false

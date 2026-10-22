@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import {
   claimPlatform,
+  DUE_BATCH,
   findDuePostIds,
   finalizePost,
   loadPublishJob,
@@ -47,7 +48,9 @@ export const schedulePosts = inngest.createFunction(
         ids.map((postId) => ({ id: publishEventId(postId, now), name: POST_PUBLISH_REQUESTED, data: { postId } })),
       );
     }
-    return { queued: ids.length };
+    // A full batch means more posts are due than one tick can hand over: the next tick continues. Worth seeing in the logs.
+    if (ids.length >= DUE_BATCH) console.warn(`[schedule] due batch full (${ids.length}), the rest waits for the next tick`);
+    return { queued: ids.length, batchFull: ids.length >= DUE_BATCH };
   },
 );
 

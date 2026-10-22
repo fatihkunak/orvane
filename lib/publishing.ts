@@ -25,7 +25,10 @@ const claimable = (now: Date) => ({
 });
 
 /** Scheduled posts whose time has come and that still have something left to publish. */
-export async function findDuePostIds(now = new Date(), limit = 100): Promise<string[]> {
+/** How many due posts one cron tick will hand to the publisher. A full batch means a backlog: the next tick takes the rest. */
+export const DUE_BATCH = Math.min(500, Math.max(1, Number(process.env.ORVANE_DUE_BATCH ?? 100) || 100));
+
+export async function findDuePostIds(now = new Date(), limit = DUE_BATCH): Promise<string[]> {
   const posts = await prisma.post.findMany({
     where: { status: "SCHEDULED", scheduledAt: { lte: now }, user: { suspendedAt: null }, platforms: { some: claimable(now) } },
     orderBy: { scheduledAt: "asc" },

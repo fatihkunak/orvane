@@ -1,18 +1,20 @@
 # A local PostgreSQL for development: `docker compose up -d`, then use these values in .env:
 #   DATABASE_URL="postgresql://orvane:orvane@localhost:5432/orvane?schema=public"
 #   DIRECT_URL="postgresql://orvane:orvane@localhost:5432/orvane?schema=public"
+# If 5432 is already taken (another Postgres, another Docker project), pick another host port:
+#   ORVANE_DB_PORT=5546 docker compose up -d      -> use :5546 in both URLs
 # Development only: the password is public in this file. Never expose this database to a network.
 services:
   db:
     image: postgres:16-alpine
-    container_name: orvane-db
     restart: unless-stopped
     environment:
       POSTGRES_USER: orvane
       POSTGRES_PASSWORD: orvane
       POSTGRES_DB: orvane
     ports:
-      - "127.0.0.1:5432:5432"
+      # No fixed container_name: two checkouts on one machine must not fight over the same container
+      - "127.0.0.1:${ORVANE_DB_PORT:-5432}:5432"
     volumes:
       - orvane-db-data:/var/lib/postgresql/data
 

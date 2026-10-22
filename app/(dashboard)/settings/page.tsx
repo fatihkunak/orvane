@@ -3,6 +3,7 @@ import { CheckCircle2, ChevronRight, CircleAlert, Plug, Sparkles } from "lucide-
 import { auth } from "@/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { VersionCard } from "@/components/settings/version-card";
+import { DeleteAccount } from "@/components/settings/delete-account";
 import { PROVIDERS, credentials } from "@/lib/social/providers";
 import { isUpdateOwner, updateEnabled } from "@/lib/update";
 
@@ -96,6 +97,8 @@ export default async function SettingsPage() {
           ))}
         </ul>
       </section>
+      {/* Last on the page and visually separate: deletion is not a setting you stumble into */}
+      <DeleteAccount email={user.email ?? ""} />
     </div>
   );
 }

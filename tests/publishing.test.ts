@@ -235,6 +235,17 @@ describe("scheduler queries", () => {
     expect(ids).not.toContain(draft.id);
   });
 
+  it("takes due posts oldest first and honours the batch limit", async () => {
+    const first = await makePost(["TWITTER"], { scheduledAt: new Date(Date.now() - 180_000) });
+    const second = await makePost(["TWITTER"], { scheduledAt: new Date(Date.now() - 120_000) });
+    const third = await makePost(["TWITTER"], { scheduledAt: new Date(Date.now() - 60_000) });
+
+    const batch = await findDuePostIds(new Date(), 2);
+    expect(batch).toHaveLength(2);
+    expect(batch).toEqual([first.id, second.id]); // oldest first, the rest waits for the next tick
+    expect(await findDuePostIds(new Date(), 500)).toContain(third.id);
+  });
+
   it("claims a row only once and reclaims it after the stale timeout", async () => {
     const post = await makePost(["TWITTER"]);
     const row = post.platforms[0];

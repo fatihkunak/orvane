@@ -11,3 +11,7 @@ Bkz. [[AiSettings]] (yapay zekâ sağlayıcıları, `/settings/ai`).
   - Cevap yalnız "başladı"dır: sunucu kendi kendini yeniden başlatır, sayfa 5 sn'de bir `/login`'e bakıp sunucu dönünce kendini yeniler. Kayıt: `deploy/logs/update.log`.
   - Otomatik güncelleme yalnız Windows/git kopyası kurulumunda (bu makine) çalışır; başka platformda eylem açık bir hata ile elle komutları söyler.
   - Doğrulama: `tests/update.test.ts` (ayrıştırma, commit karşılaştırma, sahip/kapalı kapıları). **Canlı güncelleme denenmedi** (kullanıcının sunucusunu yeniden başlatmak anlamına gelir).
+- **Hesap silme (2026-10-22):** `components/settings/delete-account.tsx` (onay için e-posta yazdırır) + `server/actions/account.ts` (`deleteAccountAction`, sunucu da aynı e-postayı doğrular) + `lib/account.ts` (`deleteUserAccount`).
+  - Veritabanı tek `delete` ile silinir: şemadaki tüm ilişkiler `onDelete: Cascade` (gönderiler, platform satırları, sosyal hesaplar/token'lar, AI sağlayıcıları, MCP belirteçleri).
+  - Yerel medya dosyaları (`.uploads/`) silinir; ad yalnız `/api/media/<uuid>.<ext>` kalıbına uyuyorsa (path traversal yok). **Cloudinary nesneleri silinmez** — uygulama destroy API'si çağırmaz, [[Media]] ve `PRIVACY.md` bunu söyler.
+  - En sonda `signOut({ redirectTo: "/login" })`: silme başarısız olursa oturum ve veri yerinde kalır. Doğrulama: `tests/account-deletion.test.ts` (ilişkiler silinir, yerel dosya gider, başka kullanıcı etkilenmez).

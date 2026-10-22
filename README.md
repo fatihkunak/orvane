@@ -25,9 +25,9 @@ Gerekenler: **Node.js 22+**, **Docker** (ya da kendi PostgreSQL 16'n) ve giriş 
 git clone https://github.com/fatihkunak/orvane.git
 cd orvane
 
+cp .env.example .env            # sonra aşağıdaki değerleri doldur (npm ci .env olmadan da çalışır)
 docker compose up -d            # yerel PostgreSQL (docker-compose.yml)
-cp .env.example .env            # sonra aşağıdaki değerleri doldur
-npm install
+npm ci                          # kilit dosyasına birebir kurulum
 npx prisma migrate dev          # veritabanı şemasını kurar
 npm run dev                     # http://localhost:3000
 
@@ -35,12 +35,14 @@ npm run dev                     # http://localhost:3000
 npx inngest-cli@latest dev -u http://localhost:3000/api/inngest
 ```
 
+> **5432 doluysa** (başka bir Postgres ya da Docker projesi): `ORVANE_DB_PORT=5546 docker compose up -d` ve `.env`'de adresi `:5546` yap. Aynı makinede iki klon sorunsuz çalışır; konteyner adı sabit değildir.
+
 `.env` içinde doldurman gereken **en az** şunlar:
 
 | Değişken | Nasıl |
 |---|---|
 | `DATABASE_URL`, `DIRECT_URL` | `docker compose` kullandıysan: `postgresql://orvane:orvane@localhost:5432/orvane?schema=public` |
-| `AUTH_SECRET` | `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"` |
+| `AUTH_SECRET` | `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`. Auth.js bu adı ortamdan kendisi okur, kodda ayrıca geçmez |
 | `TOKEN_ENCRYPTION_KEY` | aynı komut (32 bayt, base64). Platform ve AI anahtarlarını şifreler; değiştirirsen kayıtlı anahtarlar okunamaz olur |
 | `AUTH_URL`, `APP_URL` | `http://localhost:3000` |
 | `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | aşağıya bak |
@@ -86,6 +88,14 @@ Güncelleme şunları yapar (`deploy/update.cmd`): `git pull --ff-only` → `npm
 5. **Token yenileme:** X token'ı (2 saat) yayından hemen önce, Threads/LinkedIn günlük işle yenilenir.
 
 Ayrıntılı mimari: [`docs/wiki/`](docs/wiki/Index.md).
+
+## Belgeler
+
+- [SECURITY.md](SECURITY.md) — açık bildirimi ve kapsam
+- [PRIVACY.md](PRIVACY.md) — hangi veri işlenir, nereye gider, hesap silme
+- [TERMS.md](TERMS.md) — kullanım şartları, platform kuralları, sorumluluk
+- [CONTRIBUTING.md](CONTRIBUTING.md) — geliştirme akışı ve kalite kapıları
+- [CHANGELOG.md](CHANGELOG.md) — sürüm notları
 
 ## Test
 
