@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { compareCommits, isUpdateOwner, parseGithubCommits, updateEnabled, updateInvocation, updateRepo } from "@/lib/update";
 
@@ -75,5 +77,19 @@ describe("who may update", () => {
       args: ["/tmp/update.sh", "/srv/orvane"],
     });
     expect(updateInvocation("darwin", "/tmp/update.sh", "/Users/x/orvane").command).toBe("bash");
+  });
+
+  /**
+   * cmd closes a `|| ( ... )` block at the FIRST ")", so `echo UPDATE FAILED (backup) ...` inside one breaks the script with
+   * "- was unexpected at this time". That is exactly what happened when the Windows updater was finally executed; CI runs on
+   * Linux and can never catch it, so the shape is checked statically here.
+   */
+  it("keeps parenthesised error blocks free of stray parentheses", () => {
+    const script = readFileSync(path.join(process.cwd(), "deploy", "update.cmd"), "utf8");
+    const offenders = script
+      .split(/\r?\n/)
+      .filter((line) => line.includes("|| ("))
+      .filter((line) => (line.match(/\(/g) ?? []).length > 1);
+    expect(offenders).toEqual([]);
   });
 });

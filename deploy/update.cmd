@@ -21,7 +21,7 @@ echo [2/7] npm ci >> "%LOG%"
 call npm ci >> "%LOG%" 2>&1 || goto fail
 
 echo [3/7] veritabani yedegi >> "%LOG%"
-call node deploy\backup.mjs >> "%LOG%" 2>&1 || (echo UPDATE FAILED (backup) - hicbir sey degistirilmedi, migration calismadi >> "%LOG%" & exit /b 1)
+call node deploy\backup.mjs >> "%LOG%" 2>&1 || (echo UPDATE FAILED - yedek alinamadi, migration calismadi >> "%LOG%" & exit /b 1)
 
 echo [4/7] prisma migrate deploy >> "%LOG%"
 call npx prisma migrate deploy >> "%LOG%" 2>&1 || goto fail
@@ -37,7 +37,7 @@ REM Logs can only be rotated while nothing holds them open
 call node deploy\rotate-logs.mjs >> "%LOG%" 2>&1
 
 echo [6/7] npm run build >> "%LOG%"
-call npm run build >> "%LOG%" 2>&1 || (echo UPDATE FAILED (build) - app left stopped, start it by hand >> "%LOG%" & exit /b 1)
+call npm run build >> "%LOG%" 2>&1 || (echo UPDATE FAILED - build hatasi, uygulama durdurulmus kaldi, elle baslat >> "%LOG%" & exit /b 1)
 
 echo [7/7] starting the app >> "%LOG%"
 wscript //nologo "%REPO%\deploy\run-hidden.vbs" "%REPO%\deploy\start-app.cmd"
