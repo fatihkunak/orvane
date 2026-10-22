@@ -36,7 +36,7 @@ export function AiAssistant({
   providers: AiProviderOption[];
   platforms: Platform[];
   text: string;
-  /** `platform` is set when the text was written for one platform only (per-platform mode) */
+  /** `platform` is set when the text was written for one platform only (per-platform mode): it becomes that platform's own text */
   onUse: (text: string, platform?: Platform) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -321,7 +321,7 @@ export function AiAssistant({
                                   size="sm"
                                   onClick={() => {
                                     onUse(v.text, group ?? undefined);
-                                    toast.success(group ? `Metne yerleştirildi; platform yalnızca ${PLATFORMS[group].label} olarak ayarlandı` : "Metne yerleştirildi");
+                                    toast.success(group ? `${PLATFORMS[group].label} metnine yerleştirildi` : "Metne yerleştirildi");
                                   }}
                                 >
                                   Kullan

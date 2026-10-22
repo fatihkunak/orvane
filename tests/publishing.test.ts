@@ -29,14 +29,14 @@ const step = {
 };
 const run = (postId: string) => publishPostHandler({ event: { data: { postId } }, step: step as never });
 
-async function makePost(platforms: Platform[], opts: { scheduledAt?: Date; status?: "SCHEDULED" | "DRAFT"; text?: string } = {}) {
+async function makePost(platforms: Platform[], opts: { scheduledAt?: Date; status?: "SCHEDULED" | "DRAFT"; text?: string; texts?: Partial<Record<Platform, string>> } = {}) {
   return prisma.post.create({
     data: {
       userId,
       text: opts.text ?? "test post",
       status: opts.status ?? "SCHEDULED",
       scheduledAt: opts.scheduledAt ?? new Date(Date.now() - 60_000),
-      platforms: { create: platforms.map((p) => ({ platform: p, socialAccountId: accounts[p] })) },
+      platforms: { create: platforms.map((p) => ({ platform: p, socialAccountId: accounts[p], text: opts.texts?.[p] ?? null })) },
     },
     include: { platforms: true },
   });
@@ -92,6 +92,24 @@ describe("publish job", () => {
     expect(s.platforms[0]).toMatchObject({ status: "PUBLISHED", publishedPostId: "tweet-1", error: null });
     // The decrypted token reached the API
     expect(fetchMock.mock.calls[0][1].headers.Authorization).toBe("Bearer TWITTER-token");
+  });
+
+  it("publishes a platform's own text there and the post's text on the others", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- the second parameter types init for the recorded calls
+    const fetchMock = vi.fn(async (input: string, _init?: RequestInit) =>
+      String(input).includes("api.x.com")
+        ? Response.json({ data: { id: "tweet-own" } })
+        : new Response(null, { status: 201, headers: { "x-restli-id": "urn:li:share:own" } }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const post = await makePost(["TWITTER", "LINKEDIN"], { text: "uzun ortak metin", texts: { TWITTER: "kısa X metni" } });
+
+    await run(post.id);
+    expect((await stateOf(post.id)).status).toBe("PUBLISHED");
+    const bodies = fetchMock.mock.calls.map(([url, init]) => [String(url), String(init?.body ?? "")] as const);
+    expect(bodies.find(([u]) => u.includes("api.x.com"))![1]).toContain("kısa X metni");
+    expect(bodies.find(([u]) => u.includes("api.x.com"))![1]).not.toContain("uzun ortak metin");
+    expect(bodies.find(([u]) => u.includes("linkedin"))![1]).toContain("uzun ortak metin");
   });
 
   it("two overlapping runs publish exactly once (atomic claim)", async () => {

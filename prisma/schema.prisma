@@ -140,6 +140,8 @@ model PostPlatform {
   postId          String
   platform        Platform
   socialAccountId String
+  /// Text written for THIS platform; null = publish the post's own `text`
+  text            String?            @db.Text
   /// Id of the published post on the platform (tweet id, UGC post URN, Threads media id)
   publishedPostId String?
   status          PostPlatformStatus @default(PENDING)

@@ -34,6 +34,8 @@ export function CreatePostForm({ connected, aiProviders }: { connected: Connecte
     () => (Object.keys(connected) as Platform[]).slice(0, 1),
   );
   const [text, setText] = useState("");
+  // Text written for one platform only (from per-platform AI drafts); replaces `text` on that platform
+  const [overrides, setOverrides] = useState<Partial<Record<Platform, string>>>({});
   const [media, setMedia] = useState<Media[]>([]);
   const [uploading, setUploading] = useState(0);
   const [when, setWhen] = useState<When>("schedule");
@@ -50,6 +52,10 @@ export function CreatePostForm({ connected, aiProviders }: { connected: Connecte
   const [previewOf, setPreviewOf] = useState<Platform | null>(null);
 
   const hasAccounts = Object.keys(connected).length > 0;
+  // Only platforms that are still selected count, and an emptied override falls back to the shared text
+  const own = Object.fromEntries(platforms.flatMap((p) => (overrides[p]?.trim() ? [[p, overrides[p]!]] : []))) as Partial<Record<Platform, string>>;
+  const textFor = (p: Platform) => own[p] ?? text;
+  const sharedPlatforms = platforms.filter((p) => own[p] === undefined);
   const previewPlatform = previewOf && platforms.includes(previewOf) ? previewOf : platforms[0];
 
   async function uploadFiles(files: FileList | File[]) {
@@ -89,7 +95,7 @@ export function CreatePostForm({ connected, aiProviders }: { connected: Connecte
         }
         scheduledAt = local.toISOString(); // converts the browser's local time to UTC
       }
-      const res = await createPostAction({ text, platforms, mediaUrls: media.map((m) => m.url), mode, scheduledAt });
+      const res = await createPostAction({ text, platforms, overrides: own, mediaUrls: media.map((m) => m.url), mode, scheduledAt });
       if (!res.ok) {
         toast.error(res.error);
         return;
@@ -100,7 +106,7 @@ export function CreatePostForm({ connected, aiProviders }: { connected: Connecte
   }
 
   const primaryMode: "schedule" | "now" = when;
-  const canSubmit = text.trim().length > 0 && platforms.length > 0 && !pending && uploading === 0;
+  const canSubmit = (sharedPlatforms.length === 0 || text.trim().length > 0) && platforms.length > 0 && !pending && uploading === 0;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
@@ -129,10 +135,7 @@ export function CreatePostForm({ connected, aiProviders }: { connected: Connecte
           />
         </section>
 
-        <AiAssistant providers={aiProviders} platforms={platforms} text={text} onUse={(t, platform) => {
-            setText(t);
-            if (platform) setPlatforms([platform]); // text written for one platform: post it there only; the others get their own post
-          }}
+        <AiAssistant providers={aiProviders} platforms={platforms} text={text} onUse={(t, platform) => (platform ? setOverrides((o) => ({ ...o, [platform]: t })) : setText(t))}
         />
 
         <section className="space-y-2">
@@ -145,9 +148,9 @@ export function CreatePostForm({ connected, aiProviders }: { connected: Connecte
             rows={7}
             className="bg-surface-2 resize-y"
           />
-          {platforms.length > 0 && (
+          {sharedPlatforms.length > 0 && (
             <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs" aria-label="Karakter sayaçları">
-              {platforms.map((p) => {
+              {sharedPlatforms.map((p) => {
                 const n = countChars(p, text);
                 const limit = PLATFORMS[p].charLimit;
                 const over = n > limit;
@@ -162,6 +165,48 @@ export function CreatePostForm({ connected, aiProviders }: { connected: Connecte
             </ul>
           )}
         </section>
+
+        {platforms
+          .filter((p) => overrides[p] !== undefined)
+          .map((p) => {
+            const value = overrides[p] ?? "";
+            const n = countChars(p, value);
+            const limit = PLATFORMS[p].charLimit;
+            return (
+              <section key={p} className="card-surface space-y-2 p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor={`post-text-${p}`} className="flex items-center gap-2">
+                    <PlatformGlyph platform={p} className="size-4" />
+                    {PLATFORMS[p].label} için ayrı metin
+                  </Label>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setOverrides((o) => {
+                        const rest = { ...o };
+                        delete rest[p];
+                        return rest;
+                      })
+                    }
+                    className="text-muted-foreground hover:text-foreground text-xs underline-offset-2 hover:underline"
+                  >
+                    Genel metne dön
+                  </button>
+                </div>
+                <Textarea
+                  id={`post-text-${p}`}
+                  value={value}
+                  onChange={(e) => setOverrides((o) => ({ ...o, [p]: e.target.value }))}
+                  rows={5}
+                  className="bg-surface-2 resize-y"
+                />
+                <p className={cn("text-xs", n > limit ? "text-destructive font-medium" : "text-muted-foreground")}>
+                  {n}/{limit}
+                  {n > limit && ` · ${n - limit} fazla`}
+                </p>
+              </section>
+            );
+          })}
 
         <section className="space-y-2">
           <Label>Medya</Label>
@@ -282,8 +327,8 @@ export function CreatePostForm({ connected, aiProviders }: { connected: Connecte
           </div>
         )}
         <div className="card-surface space-y-3 p-4">
-          <p className={cn("text-sm leading-relaxed break-words whitespace-pre-wrap", !text && "text-muted-foreground")}>
-            {previewPlatform ? text || "Metnin burada görünecek" : "Önce bir platform seç"}
+          <p className={cn("text-sm leading-relaxed break-words whitespace-pre-wrap", !(previewPlatform && textFor(previewPlatform)) && "text-muted-foreground")}>
+            {previewPlatform ? textFor(previewPlatform) || "Metnin burada görünecek" : "Önce bir platform seç"}
           </p>
           {media[0] &&
             (media[0].kind === "image" ? (

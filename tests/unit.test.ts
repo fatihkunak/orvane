@@ -68,6 +68,25 @@ describe("createPostSchema", () => {
     expect(createPostSchema.safeParse({ ...base, mode: "schedule", scheduledAt: future }).success).toBe(true);
   });
 
+  it("lets a platform have its own text, checked against its own limit", () => {
+    const two = { ...base, platforms: ["TWITTER", "LINKEDIN"] } as const;
+    const long = "x".repeat(500);
+    expect(createPostSchema.safeParse({ ...two, text: long }).success).toBe(false); // too long for X
+    expect(createPostSchema.safeParse({ ...two, text: long, overrides: { TWITTER: "kısa" } }).success).toBe(true);
+    expect(createPostSchema.safeParse({ ...two, text: "kısa", overrides: { TWITTER: long } }).success).toBe(false);
+  });
+
+  it("needs a shared text only for platforms without their own", () => {
+    const two = { ...base, platforms: ["TWITTER", "LINKEDIN"] } as const;
+    expect(createPostSchema.safeParse({ ...two, text: "", overrides: { TWITTER: "a" } }).success).toBe(false);
+    expect(createPostSchema.safeParse({ ...two, text: "", overrides: { TWITTER: "a", LINKEDIN: "b" } }).success).toBe(true);
+    expect(createPostSchema.safeParse({ ...base, text: "" }).success).toBe(false);
+  });
+
+  it("rejects an override for a platform that is not selected", () => {
+    expect(createPostSchema.safeParse({ ...base, overrides: { TWITTER: "a" } }).success).toBe(false);
+  });
+
   it("enforces the per-platform limit and at most 4 media", () => {
     expect(createPostSchema.safeParse({ ...base, platforms: ["TWITTER"], text: "x".repeat(281) }).success).toBe(false);
     expect(createPostSchema.safeParse({ ...base, platforms: ["LINKEDIN"], text: "x".repeat(281) }).success).toBe(true);

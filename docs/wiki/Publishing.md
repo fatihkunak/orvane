@@ -2,6 +2,7 @@
 
 `lib/publishing.ts` (DB orkestrasyonu) + `lib/social/publishers/{twitter,linkedin,threads}.ts` (saf HTTP, `Deps={fetch,sleep}` enjekte edilir, testte gerçek ağ yok).
 
+- **Metin**: `loadPublishJob` platform satırının `text`'ini de getirir; gönderilen metin `target.text ?? job.text`.
 - **Atomik claim**: `claimPlatform` = `updateMany WHERE PENDING (veya 10 dk'dan eski PUBLISHING)`, count==1 olan kazanır. Cron ve "şimdi yayınla" çakışsa da tek gönderim. Çöken koşunun satırı 10 dk sonra yeniden alınır.
 - **Durum**: platform satırı `PENDING→PUBLISHING→PUBLISHED|FAILED`; `derivePostStatus`: hepsi PUBLISHED → PUBLISHED, uçuşta bir şey varsa değişmez, aksi halde FAILED. Hata metni satırda (`error`), takvimde görünür.
 - **Hata sınıfı** (`PublishError.retryable`): 429/5xx yeniden denenir; 4xx/ölü token/reddedilen içerik kalıcıdır (`NonRetriableError`).

@@ -17,7 +17,7 @@ export async function createPostAction(input: CreatePostInput): Promise<ActionRe
 
   const parsed = createPostSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Geçersiz veri" };
-  const { text, platforms, mediaUrls, mode, scheduledAt } = parsed.data;
+  const { text, platforms, overrides, mediaUrls, mode, scheduledAt } = parsed.data;
 
   // Each platform needs a connected account (Adım 6). Use the oldest one per platform.
   const accounts = await prisma.socialAccount.findMany({
@@ -38,11 +38,12 @@ export async function createPostAction(input: CreatePostInput): Promise<ActionRe
   const post = await prisma.post.create({
     data: {
       userId,
-      text,
+      // The post's own text is the default; with every platform overridden, the first one stands in so lists still show something
+      text: text || overrides[platforms[0]!]!,
       mediaUrls,
       status: mode === "draft" ? "DRAFT" : "SCHEDULED",
       scheduledAt: when,
-      platforms: { create: platforms.map((p) => ({ platform: p, socialAccountId: accountFor.get(p)! })) },
+      platforms: { create: platforms.map((p) => ({ platform: p, socialAccountId: accountFor.get(p)!, text: overrides[p] ?? null })) },
     },
     select: { id: true },
   });

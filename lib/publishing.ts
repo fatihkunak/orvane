@@ -10,7 +10,8 @@ import { ReconnectRequiredError, getAccessToken } from "@/lib/social/tokens";
 /** A platform row stuck in PUBLISHING longer than this is assumed to belong to a crashed run. */
 export const STALE_PUBLISHING_MS = 10 * 60_000;
 
-export type PublishTarget = { id: string; platform: Platform; socialAccountId: string };
+/** `text` is the platform's own text; null means the job's shared text */
+export type PublishTarget = { id: string; platform: Platform; socialAccountId: string; text: string | null };
 export type PublishJob = { postId: string; text: string; mediaUrls: string[]; targets: PublishTarget[] };
 
 const claimable = (now: Date) => ({
@@ -39,7 +40,7 @@ export async function loadPublishJob(postId: string, now = new Date()): Promise<
       id: true,
       text: true,
       mediaUrls: true,
-      platforms: { where: claimable(now), select: { id: true, platform: true, socialAccountId: true } },
+      platforms: { where: claimable(now), select: { id: true, platform: true, socialAccountId: true, text: true } },
     },
   });
   if (!post || post.platforms.length === 0) return null;

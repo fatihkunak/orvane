@@ -8,8 +8,11 @@ export const POST_MODES = ["draft", "schedule", "now"] as const;
 
 export const createPostSchema = z
   .object({
-    text: z.string().trim().min(1, "Gönderi metni boş olamaz"),
+    /** The text for every platform without its own text in `overrides` (may be empty when all have one) */
+    text: z.string().trim().default(""),
     platforms: z.array(z.enum(Platform)).min(1, "En az bir platform seç"),
+    /** Text written for one platform only; it replaces `text` there */
+    overrides: z.partialRecord(z.enum(Platform), z.string().trim().min(1, "Platform metni boş olamaz")).default({}),
     mediaUrls: z
       .array(z.string().refine(isAllowedMediaUrl, "Geçersiz medya adresi"))
       .max(MAX_MEDIA_FILES, `En fazla ${MAX_MEDIA_FILES} medya`),
@@ -18,7 +21,12 @@ export const createPostSchema = z
     scheduledAt: z.iso.datetime({ offset: true }).optional(),
   })
   .superRefine((v, ctx) => {
-    const over = overLimit(v.platforms, v.text);
+    for (const p of Object.keys(v.overrides) as Platform[]) {
+      if (!v.platforms.includes(p)) ctx.addIssue({ code: "custom", path: ["overrides", p], message: `${PLATFORMS[p].label} seçili değil` });
+    }
+    const sharedFor = v.platforms.filter((p) => !v.overrides[p]);
+    if (sharedFor.length && !v.text) ctx.addIssue({ code: "custom", path: ["text"], message: "Gönderi metni boş olamaz" });
+    const over = [...overLimit(sharedFor, v.text), ...v.platforms.filter((p) => v.overrides[p] && overLimit([p], v.overrides[p]).length)];
     if (over.length) {
       ctx.addIssue({
         code: "custom",

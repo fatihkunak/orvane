@@ -63,7 +63,7 @@ export async function publishPostHandler({ event, step }: { event: { data: unkno
     if (!claimed) continue;
 
     try {
-      const result = await publishTo(step, target, { text: job.text, mediaUrls: job.mediaUrls });
+      const result = await publishTo(step, target, { text: target.text ?? job.text, mediaUrls: job.mediaUrls });
       await step.run(`done-${target.platform}`, () => markPublished(target.id, result.publishedPostId));
     } catch (e) {
       await step.run(`fail-${target.platform}`, () => markFailed(target.id, messageOf(e)));
