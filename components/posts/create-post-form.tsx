@@ -129,7 +129,11 @@ export function CreatePostForm({ connected, aiProviders }: { connected: Connecte
           />
         </section>
 
-        <AiAssistant providers={aiProviders} platforms={platforms} text={text} onUse={setText} />
+        <AiAssistant providers={aiProviders} platforms={platforms} text={text} onUse={(t, platform) => {
+            setText(t);
+            if (platform) setPlatforms([platform]); // text written for one platform: post it there only; the others get their own post
+          }}
+        />
 
         <section className="space-y-2">
           <Label htmlFor="post-text">Metin</Label>

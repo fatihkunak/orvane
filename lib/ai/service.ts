@@ -12,6 +12,7 @@ import {
   type GenerateRequest,
   type Variant,
 } from "@/lib/ai/prompt";
+import type { Platform } from "@/generated/prisma/enums";
 import { baseUrlEditable, getProvider, resolveBaseUrl } from "@/lib/ai/providers";
 import { assertSafeBaseUrl } from "@/lib/ai/security";
 import { cleanBaseUrl, cleanKey, cleanModel, loadChain, type ChainEntry } from "@/lib/ai/store";
@@ -34,7 +35,12 @@ export async function credsFromEntry(e: ChainEntry): Promise<Creds> {
 }
 
 export interface GenerateResult {
+  /** Shared mode: the drafts. Per-platform mode: all drafts in platform order (the UI reads `byPlatform`). */
   variants: Variant[];
+  /** Only in per-platform mode: drafts written for each selected platform separately */
+  byPlatform?: Partial<Record<Platform, Variant[]>>;
+  /** Only in per-platform mode: who wrote each platform's drafts (a backup may have taken over midway) */
+  writers?: Partial<Record<Platform, { providerLabel: string; model: string }>>;
   provider: string;
   providerLabel: string;
   model: string;
@@ -45,7 +51,8 @@ export interface GenerateResult {
 /**
  * Writes post drafts with the user's own providers. Chain: the preferred (or primary) provider first, the rest as backups; a
  * provider-specific error moves on to the next one. Texts that exceed a platform limit get ONE automatic shortening attempt.
- * The result is only ever a draft for the user to review.
+ * With `perPlatform` (and 2+ platforms) every platform gets its own drafts written against its own limit and style. The
+ * result is only ever a draft for the user to review.
  */
 export async function generateForUser(userId: string, input: GenerateInput, deps: Deps = {}): Promise<GenerateResult> {
   const parsed = generateInputSchema.safeParse(input);
@@ -59,8 +66,40 @@ export async function generateForUser(userId: string, input: GenerateInput, deps
     if (i > 0) chain = [chain[i]!, ...chain.filter((_, k) => k !== i)];
   }
 
-  const { system, user } = buildPrompts(req);
   const t0 = Date.now();
+  if (!req.perPlatform || req.platforms.length < 2) {
+    const one = await generateOne(chain, req, deps);
+    return { variants: one.variants, provider: one.entry.provider, providerLabel: one.entry.info.label, model: one.model, ms: Date.now() - t0, tried: one.tried };
+  }
+
+  // One request per platform, one after the other. After the first success the provider that answered goes first, so a dead
+  // main provider is not retried (and waited on) for every platform.
+  const byPlatform: Partial<Record<Platform, Variant[]>> = {};
+  const writers: NonNullable<GenerateResult["writers"]> = {};
+  const tried: Attempt[] = [];
+  let last!: Awaited<ReturnType<typeof generateOne>>;
+  for (const platform of req.platforms) {
+    last = await generateOne(chain, { ...req, platforms: [platform] }, deps);
+    byPlatform[platform] = last.variants;
+    writers[platform] = { providerLabel: last.entry.info.label, model: last.model };
+    tried.push(...last.tried);
+    chain = [last.entry, ...chain.filter((c) => c.provider !== last.entry.provider)];
+  }
+  return {
+    variants: req.platforms.flatMap((p) => byPlatform[p] ?? []),
+    byPlatform,
+    writers,
+    provider: last.entry.provider,
+    providerLabel: last.entry.info.label,
+    model: last.model,
+    ms: Date.now() - t0,
+    tried,
+  };
+}
+
+/** One generation for exactly the platforms in `req` (a single platform in per-platform mode): chain → parse → shorten once. */
+async function generateOne(chain: ChainEntry[], req: GenerateRequest, deps: Deps) {
+  const { system, user } = buildPrompts(req);
 
   const { value, entry, tried } = await runChain(
     chain,
@@ -83,11 +122,9 @@ export async function generateForUser(userId: string, input: GenerateInput, deps
     },
   );
 
-  let variants = evaluate(value.texts, req.platforms);
-
   // Over the limit: one shortening attempt per variant on the same provider and model; keep the original (flagged) if it fails
   const repaired: Variant[] = [];
-  for (const v of variants) {
+  for (const v of evaluate(value.texts, req.platforms)) {
     if (v.over.length === 0) {
       repaired.push(v);
       continue;
@@ -101,9 +138,8 @@ export async function generateForUser(userId: string, input: GenerateInput, deps
       repaired.push(v);
     }
   }
-  variants = repaired;
 
-  return { variants, provider: entry.provider, providerLabel: entry.info.label, model: value.model, ms: Date.now() - t0, tried };
+  return { variants: repaired, entry, model: value.model, tried };
 }
 
 /** What the settings page sends to test a provider or fetch its models: typed values, falling back to the stored ones. */

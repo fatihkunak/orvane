@@ -17,7 +17,14 @@ export interface Creds {
 
 /** One provider call may take this long; a hanging provider must not freeze the whole chain. */
 export const REQUEST_TIMEOUT_MS = 60_000;
-const timed: FetchLike = (url, init) => fetch(url, { ...init, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+/** Settings-page probes (model list, key check) are tiny; a provider that has not answered after this long is stuck. */
+export const PROBE_TIMEOUT_MS = 20_000;
+const timedWith =
+  (ms: number): FetchLike =>
+  (url, init) =>
+    fetch(url, { ...init, signal: AbortSignal.timeout(ms) });
+const timed = timedWith(REQUEST_TIMEOUT_MS);
+const probeTimed = timedWith(PROBE_TIMEOUT_MS);
 
 /** "Thinking" models spend the token budget on reasoning first; a small limit returns an empty answer. */
 export const DEFAULT_MAX_TOKENS = 4096;
@@ -120,8 +127,10 @@ async function request(url: string, init: RequestInit, c: Creds, fetchImpl: Fetc
     res = await fetchImpl(url, init);
   } catch (e) {
     const name = (e as Error)?.name;
-    const msg = name === "TimeoutError" || name === "AbortError" ? "zaman aşımı" : (e as Error)?.message ?? "bağlantı hatası";
-    throw new AiError("PROVIDER", `Sağlayıcıya ulaşılamadı: ${redact(msg, c.apiKey)}`);
+    if (name === "TimeoutError" || name === "AbortError") {
+      throw new AiError("PROVIDER", `${c.info.label} yanıt vermedi (zaman aşımı). Tekrar dene ya da listeden başka bir model seç.`);
+    }
+    throw new AiError("PROVIDER", `Sağlayıcıya ulaşılamadı: ${redact((e as Error)?.message ?? "bağlantı hatası", c.apiKey)}`);
   }
   const text = await res.text();
   if (!res.ok) throw classifyHttpError(res.status, text, res.headers, c.apiKey);
@@ -135,26 +144,31 @@ async function request(url: string, init: RequestInit, c: Creds, fetchImpl: Fetc
 const jsonHeaders = (c: Creds) => ({ "content-type": "application/json", ...authHeaders(c.info, c.apiKey) });
 
 /** One chat completion → plain text (thinking blocks removed). */
-export async function complete(c: Creds, system: string, user: string, opts: { maxTokens?: number; fetchImpl?: FetchLike } = {}): Promise<string> {
+export async function complete(
+  c: Creds,
+  system: string,
+  user: string,
+  opts: { maxTokens?: number; fetchImpl?: FetchLike; timeoutMs?: number } = {},
+): Promise<string> {
   if (!c.model) throw new AiError("BAD_CONFIG", `${c.info.label} için bir model seçmelisin.`);
   const body = await request(
     chatUrl(c),
     { method: "POST", headers: jsonHeaders(c), body: JSON.stringify(requestBody(c, system, user, opts.maxTokens)) },
     c,
-    opts.fetchImpl ?? timed,
+    opts.fetchImpl ?? (opts.timeoutMs ? timedWith(opts.timeoutMs) : timed),
   );
   return parseResponse(c.info.kind, body);
 }
 
-export async function listModels(c: Creds, fetchImpl: FetchLike = timed): Promise<string[]> {
+export async function listModels(c: Creds, fetchImpl: FetchLike = probeTimed): Promise<string[]> {
   const url = `${c.baseUrl}/models${c.info.kind === "anthropic" ? "?limit=100" : ""}`;
   const body = await request(url, { method: "GET", headers: authHeaders(c.info, c.apiKey) }, c, fetchImpl);
   return parseModelList(body);
 }
 
 /** A tiny real request (key + model check). Returns the latency in ms; throws the classified error otherwise. */
-export async function checkCreds(c: Creds, fetchImpl: FetchLike = timed): Promise<number> {
+export async function checkCreds(c: Creds, fetchImpl?: FetchLike): Promise<number> {
   const t0 = Date.now();
-  await complete(c, "Reply with the single word OK.", "ping", { maxTokens: CHECK_TOKENS, fetchImpl });
+  await complete(c, "Reply with the single word OK.", "ping", { maxTokens: CHECK_TOKENS, fetchImpl, timeoutMs: PROBE_TIMEOUT_MS });
   return Date.now() - t0;
 }

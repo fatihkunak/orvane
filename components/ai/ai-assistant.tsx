@@ -36,7 +36,8 @@ export function AiAssistant({
   providers: AiProviderOption[];
   platforms: Platform[];
   text: string;
-  onUse: (text: string) => void;
+  /** `platform` is set when the text was written for one platform only (per-platform mode) */
+  onUse: (text: string, platform?: Platform) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<Mode>("create");
@@ -48,11 +49,13 @@ export function AiAssistant({
   const [emoji, setEmoji] = useState<"none" | "few" | "many">("few");
   const [hashtags, setHashtags] = useState(true);
   const [providerId, setProviderId] = useState("");
+  const [perPlatform, setPerPlatform] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<{ message: string; noProvider: boolean } | null>(null);
   const [result, setResult] = useState<GenerateResult | null>(null);
-  const [copied, setCopied] = useState<number | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
 
+  const separate = perPlatform && platforms.length > 1;
   const hasText = text.trim().length > 0;
   const canRun = !pending && (mode === "create" ? brief.trim().length > 0 : hasText);
 
@@ -70,6 +73,7 @@ export function AiAssistant({
         count,
         hashtags: hashtags ? "few" : "none",
         emoji,
+        perPlatform: separate,
         providerId: providerId || undefined,
       });
       if (!r.ok) {
@@ -81,7 +85,7 @@ export function AiAssistant({
     });
   }
 
-  async function copy(i: number, value: string) {
+  async function copy(i: string, value: string) {
     try {
       await navigator.clipboard.writeText(value);
       setCopied(i);
@@ -238,16 +242,24 @@ export function AiAssistant({
                     ))}
                   </NativeSelect>
                 </div>
-                <div className="flex items-end">
+                <div className="flex flex-wrap items-end gap-x-5 gap-y-2">
                   <Label htmlFor="ai-hashtags" className="flex h-9 cursor-pointer items-center gap-2">
                     <Switch id="ai-hashtags" checked={hashtags} onCheckedChange={setHashtags} />
                     Hashtag ekle
                   </Label>
+                  {platforms.length > 1 && (
+                    <Label htmlFor="ai-per-platform" className="flex h-9 cursor-pointer items-center gap-2">
+                      <Switch id="ai-per-platform" checked={perPlatform} onCheckedChange={setPerPlatform} />
+                      Platform başına ayrı metin
+                    </Label>
+                  )}
                 </div>
               </div>
 
               <p className="text-muted-foreground text-xs">
-                {platforms.length > 0
+                {separate
+                  ? "Her platform için kendi sınırına ve üslubuna göre ayrı metin yazılır (platform başına bir istek)."
+                  : platforms.length > 0
                   ? `Seçili platformlara göre en sıkı sınır (${Math.min(...platforms.map((p) => PLATFORMS[p].charLimit))} karakter) hedeflenir.`
                   : "Platform seçilmedi; 500 karakterlik genel bir sınır hedeflenir."}
               </p>
@@ -273,44 +285,73 @@ export function AiAssistant({
 
               {result && (
                 <div className="space-y-3" aria-live="polite">
-                  <ul className="space-y-3">
-                    {result.variants.map((v, i) => (
-                      <li key={i} className="bg-surface-2 space-y-3 rounded-xl p-3">
-                        <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">{v.text}</p>
-                        {platforms.length > 0 && (
-                          <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs" aria-label="Karakter sayaçları">
-                            {platforms.map((p) => (
-                              <li key={p} className={cn("flex items-center gap-1.5", v.over.includes(p) ? "text-destructive font-medium" : "text-muted-foreground")}>
-                                <PlatformGlyph platform={p} className="size-3" />
-                                {v.counts[p]}/{PLATFORMS[p].charLimit}
-                                {v.over.includes(p) && " · sınırı aşıyor"}
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                        <div className="flex gap-2">
-                          <Button
-                            type="button"
-                            size="sm"
-                            onClick={() => {
-                              onUse(v.text);
-                              toast.success("Metne yerleştirildi");
-                            }}
-                          >
-                            Kullan
-                          </Button>
-                          <Button type="button" variant="outline" size="sm" onClick={() => void copy(i, v.text)}>
-                            {copied === i ? <Check /> : <Copy />}
-                            {copied === i ? "Kopyalandı" : "Kopyala"}
-                          </Button>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                  {(result.byPlatform ? platforms.filter((p) => result.byPlatform?.[p]) : [null]).map((group) => (
+                    <div key={group ?? "all"} className="space-y-2">
+                      {group && (
+                        <h3 className="flex items-center gap-2 text-sm font-semibold">
+                          <PlatformGlyph platform={group} className="size-4" />
+                          {PLATFORMS[group].label}
+                          {result.writers?.[group] && (
+                            <span className="text-muted-foreground text-xs font-normal">
+                              {result.writers[group].providerLabel} · {result.writers[group].model}
+                            </span>
+                          )}
+                        </h3>
+                      )}
+                      <ul className="space-y-3">
+                        {(group ? (result.byPlatform?.[group] ?? []) : result.variants).map((v, i) => {
+                          const key = `${group ?? "all"}-${i}`;
+                          return (
+                            <li key={key} className="bg-surface-2 space-y-3 rounded-xl p-3">
+                              <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">{v.text}</p>
+                              {platforms.length > 0 && (
+                                <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs" aria-label="Karakter sayaçları">
+                                  {platforms.map((p) => (
+                                    <li key={p} className={cn("flex items-center gap-1.5", v.over.includes(p) ? "text-destructive font-medium" : "text-muted-foreground")}>
+                                      <PlatformGlyph platform={p} className="size-3" />
+                                      {v.counts[p]}/{PLATFORMS[p].charLimit}
+                                      {v.over.includes(p) && " · sınırı aşıyor"}
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                              <div className="flex gap-2">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  onClick={() => {
+                                    onUse(v.text, group ?? undefined);
+                                    toast.success(group ? `Metne yerleştirildi; platform yalnızca ${PLATFORMS[group].label} olarak ayarlandı` : "Metne yerleştirildi");
+                                  }}
+                                >
+                                  Kullan
+                                </Button>
+                                <Button type="button" variant="outline" size="sm" onClick={() => void copy(key, v.text)}>
+                                  {copied === key ? <Check /> : <Copy />}
+                                  {copied === key ? "Kopyalandı" : "Kopyala"}
+                                </Button>
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  ))}
                   <p className="text-muted-foreground text-xs">
-                    {result.providerLabel} · {result.model} · {(result.ms / 1000).toFixed(1)} sn
-                    {result.tried.some((t) => !t.ok) && ` · ${result.tried.filter((t) => !t.ok).length} sağlayıcı başarısız oldu, yedek kullanıldı`}
+                    {result.writers ? "Toplam" : `${result.providerLabel} · ${result.model}`} · {(result.ms / 1000).toFixed(1)} sn
+                    {result.tried.some((t) => !t.ok) && ` · ${result.tried.filter((t) => !t.ok).length} deneme başarısız oldu, yedek kullanıldı`}
                   </p>
+                  {result.tried.some((t) => !t.ok) && (
+                    <ul className="text-muted-foreground space-y-0.5 text-xs">
+                      {result.tried
+                        .filter((t) => !t.ok)
+                        .map((t, i) => (
+                          <li key={i}>
+                            {t.provider}: {t.message}
+                          </li>
+                        ))}
+                    </ul>
+                  )}
                 </div>
               )}
             </>

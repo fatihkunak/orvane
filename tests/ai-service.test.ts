@@ -116,6 +116,40 @@ describe("generation", () => {
     expect(c!.messages![1]!.content).toContain("Yeni sürüm yayında");
   });
 
+  it("writes a separate text per platform against each platform's own limit", async () => {
+    await saveConfig(userId, { provider: "groq", apiKey: KEY });
+    const f = vi.fn<FetchLike>(async () => answer("kısa metin"));
+    const r = await generateForUser(userId, { ...input, count: 1, platforms: ["TWITTER", "LINKEDIN"], perPlatform: true }, { fetchImpl: f });
+    const [x, li] = calls(f);
+    expect(calls(f)).toHaveLength(2);
+    expect(x!.messages![0]!.content).toContain("at most 257 characters");
+    expect(x!.messages![0]!.content).toContain("X: concise");
+    expect(x!.messages![0]!.content).not.toContain("LinkedIn:");
+    expect(li!.messages![0]!.content).toContain("at most 2760 characters");
+    expect(li!.messages![0]!.content).toContain("LinkedIn:");
+    expect(Object.keys(r.byPlatform ?? {})).toEqual(["TWITTER", "LINKEDIN"]);
+    expect(r.byPlatform!.TWITTER![0]!.counts).toEqual({ TWITTER: "kısa metin".length });
+    expect(r.variants).toHaveLength(2);
+  });
+
+  it("skips a dead main provider for the remaining platforms in per-platform mode", async () => {
+    await saveConfig(userId, { provider: "groq", apiKey: KEY });
+    await saveConfig(userId, { provider: "mistral", apiKey: "mistral-key-123456" });
+    const f = vi.fn<FetchLike>(async (url) => (url.includes("groq.com") ? json(401, { error: { message: "bad key" } }) : answer("yedek")));
+    const r = await generateForUser(userId, { ...input, count: 1, platforms: ["TWITTER", "THREADS", "LINKEDIN"], perPlatform: true }, { fetchImpl: f });
+    expect(r.provider).toBe("mistral");
+    expect(r.writers!.TWITTER!.providerLabel).toBe("Mistral");
+    expect(calls(f).filter((c) => c.url.includes("groq.com"))).toHaveLength(1); // only the first platform tried groq
+  });
+
+  it("ignores perPlatform with a single platform", async () => {
+    await saveConfig(userId, { provider: "groq", apiKey: KEY });
+    const f = vi.fn<FetchLike>(async () => answer("x"));
+    const r = await generateForUser(userId, { ...input, count: 1, perPlatform: true }, { fetchImpl: f });
+    expect(r.byPlatform).toBeUndefined();
+    expect(f).toHaveBeenCalledTimes(1);
+  });
+
   it("fails over to the backup when the primary rejects the key", async () => {
     await saveConfig(userId, { provider: "groq", apiKey: KEY });
     await saveConfig(userId, { provider: "mistral", apiKey: "mistral-key-123456" });
@@ -237,6 +271,14 @@ describe("probing a provider from the settings page", () => {
     const f = vi.fn<FetchLike>(async () => json(401, "{}"));
     await expect(checkProviderForUser(userId, { provider: "groq", apiKey: KEY }, { fetchImpl: f })).rejects.toMatchObject({ code: "AUTH" });
     await expect(fetchModelsForUser(userId, { provider: "custom", baseUrl: "http://localhost:1/v1" }, { fetchImpl: f })).rejects.toMatchObject({ code: "BAD_CONFIG" });
+  });
+
+  it("explains a timeout in plain words", async () => {
+    const f = vi.fn<FetchLike>(async () => Promise.reject(new DOMException("timed out", "TimeoutError")));
+    await expect(checkProviderForUser(userId, { provider: "gemini", apiKey: KEY }, { fetchImpl: f })).rejects.toMatchObject({
+      code: "PROVIDER",
+      message: expect.stringContaining("yanıt vermedi"),
+    });
   });
 });
 

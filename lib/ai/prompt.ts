@@ -70,6 +70,8 @@ export const generateInputSchema = z
     count: z.number().int().min(1).max(3).default(2),
     hashtags: z.enum(["none", "few"]).default("few"),
     emoji: z.enum(["none", "few", "many"]).default("few"),
+    /** Several platforms selected: write a separate text tuned to EACH platform instead of one text that fits them all */
+    perPlatform: z.boolean().default(false),
     /** Prefer this provider first (the rest of the chain stays as backup) */
     providerId: z.string().max(40).optional(),
   })
