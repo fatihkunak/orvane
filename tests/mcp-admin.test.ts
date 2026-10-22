@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { encrypt } from "@/lib/crypto";
 import { createApiToken, hashToken, listApiTokens, MAX_ACTIVE_TOKENS, revokeApiToken, verifyApiToken } from "@/lib/api-tokens";
 import { createMcpServer } from "@/lib/mcp/server";
+import { inngest, POST_PUBLISH_REQUESTED } from "@/inngest/client";
 import { resetRateLimits } from "@/lib/ai/rate-limit";
 import { findDuePostIds, loadPublishJob } from "@/lib/publishing";
 import { adminStats, getUserDetail, listUsers, setSuspended } from "@/lib/admin-users";
@@ -15,6 +16,15 @@ import { POST as adminSuspend } from "@/app/api/admin/users/[id]/suspend/route";
 import { GET as adminStatsRoute } from "@/app/api/admin/stats/route";
 
 /** Integration tests against the local Postgres: every row hangs off throw-away users, cleanup is a cascading delete. */
+
+/**
+ * publish_now would hand a real event to Inngest, which would try to post to X/LinkedIn/Threads with the fake tokens below.
+ * The send is stubbed: the tests check that the event is asked for, never that a platform was actually called.
+ */
+vi.mock("@/inngest/client", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/inngest/client")>();
+  return { ...actual, inngest: { send: vi.fn(async () => ({})) } as unknown as typeof actual.inngest };
+});
 
 let userId: string;
 let otherId: string;
@@ -35,6 +45,7 @@ afterAll(async () => {
 beforeEach(() => {
   vi.stubEnv("ORVANE_ADMIN_TOKEN", ADMIN_TOKEN);
   vi.stubEnv("APP_URL", "http://localhost:3055");
+  vi.clearAllMocks();
   resetRateLimits();
 });
 afterEach(async () => {
@@ -90,7 +101,7 @@ async function connect(uid: string) {
 }
 
 describe("MCP tools", () => {
-  it("offers draft tools plus one schedule tool, and nothing that publishes", async () => {
+  it("offers draft tools, one schedule tool and one publish tool, nothing that writes and sends in one call", async () => {
     const { client } = await connect(userId);
     const names = (await client.listTools()).tools.map((t) => t.name).sort();
     expect(names).toEqual([
@@ -100,6 +111,7 @@ describe("MCP tools", () => {
       "get_post",
       "list_connected_accounts",
       "list_posts",
+      "publish_now",
       "schedule_post",
       "update_draft",
     ]);
@@ -203,6 +215,47 @@ describe("MCP tools", () => {
     expect((await call("schedule_post", { id, text: "çakışma", scheduledAt: when })).isError).toBe(true);
     expect((await call("schedule_post", { text: "platformsuz", scheduledAt: when })).isError).toBe(true);
     expect((await prisma.post.findUniqueOrThrow({ where: { id } })).status).toBe("DRAFT"); // nothing moved
+  });
+
+  it("refuses to publish without confirm, and publishes an approved draft exactly once", async () => {
+    const { call } = await connect(userId);
+    const { id } = (await call("create_draft", { text: "hemen gitsin", platforms: ["TWITTER", "LINKEDIN"] })).json() as { id: string };
+
+    // No confirm -> the tool never runs, and the event is never asked for
+    expect((await call("publish_now", { id })).isError).toBe(true);
+    // Extra parameters are refused instead of silently ignored: the text that goes out is the draft's text, not this one
+    expect((await call("publish_now", { id, confirm: true, text: "başka metin" })).isError).toBe(true);
+    expect((await prisma.post.findUniqueOrThrow({ where: { id } })).status).toBe("DRAFT");
+    expect(vi.mocked(inngest.send)).not.toHaveBeenCalled();
+
+    const done = await call("publish_now", { id, confirm: true });
+    expect(done.isError).toBe(false);
+    expect(done.json()).toMatchObject({ id, status: "SCHEDULED", dueNow: true, queued: true });
+
+    const row = await prisma.post.findUniqueOrThrow({ where: { id }, include: { platforms: true } });
+    expect(row.status).toBe("SCHEDULED");
+    expect(row.scheduledAt!.getTime()).toBeLessThanOrEqual(Date.now() + 5_000); // due immediately, not in the future
+    // The tool only hands the post over: claiming and sending is the publisher's job, so nothing is claimed here
+    expect(row.platforms.map((p) => p.status)).toEqual(["PENDING", "PENDING"]);
+    expect(vi.mocked(inngest.send)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(inngest.send).mock.calls[0]![0]).toMatchObject({ name: POST_PUBLISH_REQUESTED, data: { postId: id } });
+
+    // A second call cannot double-post: the row is no longer a DRAFT and no second event is sent
+    expect((await call("publish_now", { id, confirm: true })).isError).toBe(true);
+    expect(vi.mocked(inngest.send)).toHaveBeenCalledTimes(1);
+  });
+
+  it("publishes only the owner's own drafts and never a post that already went out", async () => {
+    const { call } = await connect(userId);
+    const theirs = (await call("create_draft", { text: "başkasının", platforms: ["TWITTER"] })).json() as { id: string };
+
+    const other = await connect(otherId);
+    expect((await other.call("publish_now", { id: theirs.id, confirm: true })).isError).toBe(true);
+    expect((await prisma.post.findUniqueOrThrow({ where: { id: theirs.id } })).status).toBe("DRAFT");
+
+    await prisma.post.update({ where: { id: theirs.id }, data: { status: "PUBLISHED" } });
+    expect((await call("publish_now", { id: theirs.id, confirm: true })).isError).toBe(true);
+    expect(vi.mocked(inngest.send)).not.toHaveBeenCalled();
   });
 });
 

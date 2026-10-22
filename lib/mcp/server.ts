@@ -7,12 +7,13 @@ import { BRAND } from "@/lib/brand";
 import { PLATFORMS } from "@/lib/platforms";
 import { createPostForUser } from "@/lib/post-create";
 import { createPostSchema, scheduleTimeSchema } from "@/lib/validation/post";
+import { POST_PUBLISH_REQUESTED, inngest, publishEventId } from "@/inngest/client";
 
 /**
- * The MCP server for ONE user (built per request from a verified API token). Tools read the user's accounts and posts and
- * manage DRAFTS, plus ONE schedule tool (`schedule_post`). There is deliberately no tool that publishes: a real post to X,
- * LinkedIn or Threads needs the person's own click in the app (constitution II), so a model can prepare text and pick a
- * future time, but never send anything.
+ * The MCP server for ONE user (built per request from a verified API token). Tools read the user's accounts and posts, manage
+ * DRAFTS, and can schedule or (on an explicit per-post yes) publish an existing draft. No tool both writes text and sends it:
+ * publishing is only ever a second, separate step on a draft that already exists, so a model cannot compose and fire in one
+ * shot (constitution I/II).
  */
 
 const text = (value: unknown) => ({ content: [{ type: "text" as const, text: typeof value === "string" ? value : JSON.stringify(value, null, 2) }] });
@@ -29,9 +30,9 @@ export function createMcpServer(userId: string): McpServer {
     { name: BRAND.name.toLowerCase(), version: "1.0.0" },
     {
       instructions: [
-        `${BRAND.name} plans posts for X, LinkedIn and Threads. You can read the user's connected accounts and posts, create and edit DRAFTS, and schedule a post for a future time.`,
-        "You cannot publish: nothing goes out while you are working. A scheduled post is published later by the app's own scheduler, and the user can still open it and cancel or edit it before then.",
-        "Prefer creating a draft first; use schedule_post with the draft's id only when the user has picked a time.",
+        `${BRAND.name} plans posts for X, LinkedIn and Threads. You can read the user's connected accounts and posts, create and edit DRAFTS, schedule a post for a future time, and publish an existing draft right away.`,
+        "Default to a DRAFT. schedule_post is the normal way to place a post: it is published later by the app's scheduler and the user can still cancel it until then.",
+        "publish_now is IRREVERSIBLE and posts to the user's real accounts. Call it only when the user has explicitly asked for this exact post to go out now in this conversation; never on your own initiative, never as a 'next step' after creating a draft.",
         "Call get_platform_limits before writing, and keep each text within the limit of the platform it is for.",
         "Use `overrides` to give one platform its own text (e.g. a short X version and a longer LinkedIn version).",
       ].join(" "),
@@ -186,6 +187,45 @@ export function createMcpServer(userId: string): McpServer {
       return r.ok
         ? text({ id: r.id, status: "SCHEDULED", scheduledAt: when.toISOString(), note: "Zamanlandı. Yayın saati gelene kadar uygulamadan iptal edilebilir." })
         : fail(r.error);
+    },
+  );
+
+  server.registerTool(
+    "publish_now",
+    {
+      description:
+        "Publish an existing DRAFT immediately to the user's real accounts. IRREVERSIBLE and it costs the user real API quota. Only call it when the user has explicitly asked for this exact post to go out now; the `confirm` flag must be true. It cannot take new text -- create the draft first, so the text the user approved is the text that gets sent.",
+      inputSchema: z.strictObject({
+        id: z.string().min(1).describe("A DRAFT of this user"),
+        confirm: z.literal(true).describe("Only send true after the user approved publishing this exact post"),
+      }),
+    },
+    async ({ id }) => {
+      // Atomic: only a draft moves, so a post cannot be sent twice and a published/scheduled one is left alone
+      const { count } = await prisma.post.updateMany({
+        where: { id, userId, status: "DRAFT" },
+        data: { status: "SCHEDULED", scheduledAt: new Date() },
+      });
+      if (count !== 1) return fail("Yayınlanabilecek bir taslak bulunamadı.");
+
+      // Same path as the app's "Publish now" button. If the event does not reach Inngest, the every-minute scheduler still
+      // finds the post (it is due now), so a failure here must not look like a failed publish.
+      let queued = true;
+      try {
+        await inngest.send({ id: publishEventId(id), name: POST_PUBLISH_REQUESTED, data: { postId: id } });
+      } catch (e) {
+        queued = false;
+        console.warn("inngest.send failed, the scheduler will publish it", e);
+      }
+      return text({
+        id,
+        status: "SCHEDULED", // the real row value: due now, the publisher is about to claim it
+        dueNow: true,
+        queued,
+        note: queued
+          ? "Yayın kuyruğa alındı. Sonucu görmek için get_post ile platform durumlarına bak."
+          : "Olay gönderilemedi ama gönderi zamanı gelmiş sayılıyor; dakikalık zamanlayıcı bir dakika içinde yayınlayacak.",
+      });
     },
   );
 
