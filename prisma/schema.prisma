@@ -50,6 +50,8 @@ model User {
   emailVerified DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  /// Set by the admin panel: a suspended user cannot sign in, use API tokens or have posts published
+  suspendedAt   DateTime?
 
   // Auth.js relations (login identity, e.g. Google)
   accounts Account[]
@@ -59,6 +61,26 @@ model User {
   socialAccounts SocialAccount[]
   posts          Post[]
   aiProviders    AiProviderConfig[]
+  apiTokens      ApiToken[]
+}
+
+/// Personal access token for the MCP endpoint (local models and other MCP clients). Only the SHA-256 of the token is
+/// stored: the token itself is shown once at creation and cannot be recovered.
+model ApiToken {
+  id         String    @id @default(cuid())
+  userId     String
+  name       String
+  /// SHA-256 (hex) of the full token
+  tokenHash  String    @unique
+  /// First characters of the token, so the user can tell tokens apart in the list
+  prefix     String
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 /// A user's own LLM provider for AI post writing (bring your own key).

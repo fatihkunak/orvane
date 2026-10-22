@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { auth, signOut } from "@/auth";
+import { authState, signOut } from "@/auth";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
@@ -10,7 +10,9 @@ import { Topbar } from "@/components/layout/topbar";
  * since the proxy cannot read the database.
  */
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth();
+  const { session, suspended } = await authState();
+  // The proxy still sees the cookie, so sending a suspended user to /login would bounce them back here
+  if (suspended) redirect("/suspended");
   if (!session?.user) redirect("/login");
 
   async function signOutAction() {

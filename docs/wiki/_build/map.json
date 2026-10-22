@@ -186,6 +186,35 @@
     "missing": [],
     "noCode": false
   },
+  "Mcp": {
+    "category": "Entegrasyonlar",
+    "paths": [
+      "app/api/mcp/route.ts",
+      "lib/mcp/server.ts",
+      "lib/api-tokens.ts",
+      "lib/post-create.ts",
+      "app/(dashboard)/settings/mcp/page.tsx",
+      "components/mcp/token-manager.tsx",
+      "server/actions/mcp.ts",
+      "tests/mcp-admin.test.ts"
+    ],
+    "missing": [],
+    "noCode": false
+  },
+  "AdminApi": {
+    "category": "Entegrasyonlar",
+    "paths": [
+      "lib/admin-api.ts",
+      "lib/admin-users.ts",
+      "app/api/admin/users/route.ts",
+      "app/api/admin/users/[id]/route.ts",
+      "app/api/admin/users/[id]/suspend/route.ts",
+      "app/api/admin/stats/route.ts",
+      "app/suspended/page.tsx"
+    ],
+    "missing": [],
+    "noCode": false
+  },
   "Accounts": {
     "category": "Entegrasyonlar",
     "paths": [
@@ -231,7 +260,8 @@
       "tests/publishing.test.ts",
       "tests/oauth-flow.test.ts",
       "tests/ai-core.test.ts",
-      "tests/ai-service.test.ts"
+      "tests/ai-service.test.ts",
+      "tests/mcp-admin.test.ts"
     ],
     "missing": [],
     "noCode": false

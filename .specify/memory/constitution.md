@@ -1,6 +1,7 @@
 <!--
 Sync Impact Report
-- Version change: 1.0.0 → 1.1.0 (MINOR: I. ilkeye yapay zekâ sağlayıcı anahtarları, SSRF ve taslak kuralı eklendi)
+- Version change: 1.1.0 → 1.2.0 (MINOR: I. ilkeye MCP belirteçleri, yönetim API'si ve askıya alma kuralı eklendi)
+- Önceki: 1.0.0 → 1.1.0 (MINOR: I. ilkeye yapay zekâ sağlayıcı anahtarları, SSRF ve taslak kuralı eklendi)
 - Önceki sürüm: (şablon, sürümsüz) → 1.0.0
 - Eklenen ilkeler: I. Güvenlik Değişmezleri, II. Dürüst Raporlama ve Onaylı Yayın,
   III. Test Disiplini, IV. Marka ve Tasarım Tutarlılığı, V. Wiki-First ve Tek Kaynak
@@ -40,6 +41,11 @@ gevşetilemez:
   yazdığı sağlayıcı adresleri MUST SSRF denetiminden geçer (yalnız genel https; yerel adresler
   yalnızca `ALLOW_PRIVATE_LLM_URLS=1` ile ve internete açık kurulumda KAPALI). Yapay zekâ çıktısı
   yalnızca taslaktır: kullanıcı onaylamadan hiçbir şey yayınlanmaz (bkz. II).
+- MCP belirteçleri (`lib/api-tokens.ts`) MUST yalnızca SHA-256 özetiyle saklanır ve oluşturulurken bir
+  kez gösterilir; MCP uç noktası yalnızca taslak araçları sunar, zamanlama/yayın aracı MUST olmaz.
+  Yönetim API'si (`/api/admin/*`) MUST `ORVANE_ADMIN_TOKEN` (≥32 karakter, sabit zamanlı karşılaştırma)
+  olmadan kapalıdır ve yanıtında OAuth token'ı, AI anahtarı veya belirteç özeti MUST bulunmaz. Askıdaki
+  kullanıcı giriş yapamaz, belirteç kullanamaz ve gönderisi yayınlanmaz.
 
 *Gerekçe: bir sızıntı veya çift gönderim, kullanıcının herkese açık hesabında geri alınamaz hasar
 yaratır.*
@@ -134,4 +140,4 @@ açıkça belirtilip önce anayasa değiştirilir ya da plan düzeltilir.
   ihlallerini kontrol eder. Karmaşıklık veya ihlal gerekçelendirilmeden kabul edilmez.
 - **Çalışma rehberi:** günlük geliştirme bilgisi için `CLAUDE.md` ve `docs/wiki/` kullanılır.
 
-**Version**: 1.1.0 | **Ratified**: 2026-10-22 | **Last Amended**: 2026-10-22
+**Version**: 1.2.0 | **Ratified**: 2026-10-22 | **Last Amended**: 2026-10-22

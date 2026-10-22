@@ -24,7 +24,7 @@ const claimable = (now: Date) => ({
 /** Scheduled posts whose time has come and that still have something left to publish. */
 export async function findDuePostIds(now = new Date(), limit = 100): Promise<string[]> {
   const posts = await prisma.post.findMany({
-    where: { status: "SCHEDULED", scheduledAt: { lte: now }, platforms: { some: claimable(now) } },
+    where: { status: "SCHEDULED", scheduledAt: { lte: now }, user: { suspendedAt: null }, platforms: { some: claimable(now) } },
     orderBy: { scheduledAt: "asc" },
     take: limit,
     select: { id: true },
@@ -35,7 +35,7 @@ export async function findDuePostIds(now = new Date(), limit = 100): Promise<str
 /** Loads what a publish run needs. Returns null when the post vanished or is no longer scheduled. */
 export async function loadPublishJob(postId: string, now = new Date()): Promise<PublishJob | null> {
   const post = await prisma.post.findFirst({
-    where: { id: postId, status: "SCHEDULED" },
+    where: { id: postId, status: "SCHEDULED", user: { suspendedAt: null } },
     select: {
       id: true,
       text: true,

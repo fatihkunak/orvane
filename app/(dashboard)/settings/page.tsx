@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CheckCircle2, ChevronRight, CircleAlert, Sparkles } from "lucide-react";
+import { CheckCircle2, ChevronRight, CircleAlert, Plug, Sparkles } from "lucide-react";
 import { auth } from "@/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PROVIDERS, credentials } from "@/lib/social/providers";
@@ -15,6 +15,7 @@ function checklist() {
   }));
   items.push(
     { label: "Token şifreleme anahtarı", hint: "TOKEN_ENCRYPTION_KEY", ok: !!process.env.TOKEN_ENCRYPTION_KEY },
+    { label: "Yönetim API'si (fatihgo paneli)", hint: "ORVANE_ADMIN_TOKEN (en az 32 karakter); yoksa panel Orvane'e bağlanamaz", ok: (process.env.ORVANE_ADMIN_TOKEN ?? "").length >= 32 },
     { label: "Giriş (Google)", hint: "AUTH_GOOGLE_ID, AUTH_GOOGLE_SECRET", ok: !!(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET) },
     { label: "Medya depolama (Cloudinary)", hint: "CLOUDINARY_URL; yoksa yerel dosya kullanılır, Threads çalışmaz", ok: !!process.env.CLOUDINARY_URL },
     { label: "Zamanlanmış yayın (Inngest)", hint: "INNGEST_EVENT_KEY, INNGEST_SIGNING_KEY (yerelde Inngest Dev Server yeter)", ok: !!(process.env.INNGEST_EVENT_KEY && process.env.INNGEST_SIGNING_KEY) },
@@ -48,6 +49,17 @@ export default async function SettingsPage() {
         <span className="min-w-0 flex-1">
           <span className="block text-base font-semibold">Yapay zekâ sağlayıcıları</span>
           <span className="text-muted-foreground block text-sm">Gönderi yazımı için kendi anahtarını ekle, model seç, yedek zinciri kur</span>
+        </span>
+        <ChevronRight className="text-muted-foreground size-4" aria-hidden />
+      </Link>
+
+      <Link href="/settings/mcp" className="card-surface hover:bg-surface-2 flex items-center gap-3 p-4 transition-colors">
+        <span className="bg-brand-teal/15 text-brand-mist grid size-10 shrink-0 place-items-center rounded-xl">
+          <Plug className="size-5" aria-hidden />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-base font-semibold">MCP: yerel modeller</span>
+          <span className="text-muted-foreground block text-sm">LM Studio gibi istemciler belirteçle bağlanıp taslak hazırlasın</span>
         </span>
         <ChevronRight className="text-muted-foreground size-4" aria-hidden />
       </Link>

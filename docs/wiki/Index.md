@@ -40,6 +40,8 @@
 - [[AiSettings]] — `/settings/ai`: zincir, model listesi, anahtar sınama, şifreli depo
 
 ## 🔌 Entegrasyonlar
+- [[Mcp]] — MCP sunucusu: yerel modeller/istemciler belirteçle bağlanıp taslak hazırlar (yayın yok)
+- [[AdminApi]] — fatihgo paneli için servis-belirteçli kullanıcı yönetimi, askıya alma
 - [[Accounts]] — OAuth bağlama akışı (X PKCE, LinkedIn, Threads), token şifreleme ve yenileme
 - [[Publishing]] — yayıncılar, atomik claim, durum türetme, hata sınıflandırma
 - [[Inngest]] — cron + olay fan-out, publish-post adımları, yerel Dev Server
