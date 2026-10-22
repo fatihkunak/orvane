@@ -6,12 +6,13 @@ import { prisma } from "@/lib/prisma";
 import { BRAND } from "@/lib/brand";
 import { PLATFORMS } from "@/lib/platforms";
 import { createPostForUser } from "@/lib/post-create";
-import { createPostSchema } from "@/lib/validation/post";
+import { createPostSchema, scheduleTimeSchema } from "@/lib/validation/post";
 
 /**
  * The MCP server for ONE user (built per request from a verified API token). Tools read the user's accounts and posts and
- * manage DRAFTS. There is deliberately no tool that schedules or publishes: real posts to X, LinkedIn and Threads need the
- * person's own click in the app (constitution II), so a model can prepare text but never send it.
+ * manage DRAFTS, plus ONE schedule tool (`schedule_post`). There is deliberately no tool that publishes: a real post to X,
+ * LinkedIn or Threads needs the person's own click in the app (constitution II), so a model can prepare text and pick a
+ * future time, but never send anything.
  */
 
 const text = (value: unknown) => ({ content: [{ type: "text" as const, text: typeof value === "string" ? value : JSON.stringify(value, null, 2) }] });
@@ -28,8 +29,9 @@ export function createMcpServer(userId: string): McpServer {
     { name: BRAND.name.toLowerCase(), version: "1.0.0" },
     {
       instructions: [
-        `${BRAND.name} plans posts for X, LinkedIn and Threads. You can read the user's connected accounts and posts and create or edit DRAFTS.`,
-        "You cannot schedule or publish: tell the user to review and publish the draft in the app.",
+        `${BRAND.name} plans posts for X, LinkedIn and Threads. You can read the user's connected accounts and posts, create and edit DRAFTS, and schedule a post for a future time.`,
+        "You cannot publish: nothing goes out while you are working. A scheduled post is published later by the app's own scheduler, and the user can still open it and cancel or edit it before then.",
+        "Prefer creating a draft first; use schedule_post with the draft's id only when the user has picked a time.",
         "Call get_platform_limits before writing, and keep each text within the limit of the platform it is for.",
         "Use `overrides` to give one platform its own text (e.g. a short X version and a longer LinkedIn version).",
       ].join(" "),
@@ -152,6 +154,38 @@ export function createMcpServer(userId: string): McpServer {
         ...post.platforms.map((p) => prisma.postPlatform.update({ where: { id: p.id }, data: { text: nextOverrides[p.platform] ?? null } })),
       ]);
       return text({ id, status: "DRAFT", updated: true });
+    },
+  );
+
+  server.registerTool(
+    "schedule_post",
+    {
+      description:
+        "Schedule a post for a future time. Nothing is published now: the app's scheduler picks it up at that time, and the user can still open the post and cancel or edit it before then. Pass an existing DRAFT `id` to schedule that draft as it is, or `text` + `platforms` to schedule a new post.",
+      inputSchema: z.object({
+        scheduledAt: scheduleTimeSchema.describe("ISO 8601 with timezone offset, e.g. 2026-10-23T09:30:00+03:00. Must not be in the past."),
+        id: z.string().min(1).optional().describe("A DRAFT of this user to schedule; its own text and platforms are kept"),
+        text: z.string().default("").describe("Text for a NEW post; ignored when `id` is given"),
+        platforms: z.array(platformEnum).min(1).optional().describe("Platforms of a NEW post; required when `id` is not given"),
+        overrides: z.partialRecord(platformEnum, z.string()).optional(),
+      }),
+    },
+    async ({ scheduledAt, id, text: body, platforms, overrides }) => {
+      const when = new Date(scheduledAt);
+
+      // Existing draft: one atomic move, so a draft that is no longer a draft (published meanwhile) is never rescheduled
+      if (id) {
+        if (platforms?.length || body.trim()) return fail("`id` verildiğinde `text` ve `platforms` kullanılmaz; taslağın kendi metni ve platformları korunur.");
+        const { count } = await prisma.post.updateMany({ where: { id, userId, status: "DRAFT" }, data: { status: "SCHEDULED", scheduledAt: when } });
+        if (count !== 1) return fail("Zamanlanabilecek bir taslak bulunamadı.");
+        return text({ id, status: "SCHEDULED", scheduledAt: when.toISOString(), note: "Zamanlandı. Yayın saati gelene kadar uygulamadan iptal edilebilir." });
+      }
+
+      if (!platforms?.length) return fail("Yeni gönderi için `platforms` gerekli.");
+      const r = await createPostForUser(userId, { text: body, platforms, overrides: overrides ?? {}, mediaUrls: [], mode: "schedule", scheduledAt });
+      return r.ok
+        ? text({ id: r.id, status: "SCHEDULED", scheduledAt: when.toISOString(), note: "Zamanlandı. Yayın saati gelene kadar uygulamadan iptal edilebilir." })
+        : fail(r.error);
     },
   );
 

@@ -90,10 +90,19 @@ async function connect(uid: string) {
 }
 
 describe("MCP tools", () => {
-  it("offers draft tools only: nothing that schedules or publishes", async () => {
+  it("offers draft tools plus one schedule tool, and nothing that publishes", async () => {
     const { client } = await connect(userId);
     const names = (await client.listTools()).tools.map((t) => t.name).sort();
-    expect(names).toEqual(["create_draft", "delete_draft", "get_platform_limits", "get_post", "list_connected_accounts", "list_posts", "update_draft"]);
+    expect(names).toEqual([
+      "create_draft",
+      "delete_draft",
+      "get_platform_limits",
+      "get_post",
+      "list_connected_accounts",
+      "list_posts",
+      "schedule_post",
+      "update_draft",
+    ]);
   });
 
   it("lists connected accounts and limits without any secret", async () => {
@@ -147,6 +156,53 @@ describe("MCP tools", () => {
     expect((await mine.call("get_post", { id: theirs.id })).isError).toBe(true);
     expect((await mine.call("delete_draft", { id: theirs.id })).isError).toBe(true);
     expect((await mine.call("list_posts")).text).not.toContain(theirs.id);
+  });
+
+  it("schedules a new post for a future time without publishing anything", async () => {
+    const { call } = await connect(userId);
+    const when = new Date(Date.now() + 60 * 60_000).toISOString();
+
+    const made = await call("schedule_post", { text: "ileri tarihli", platforms: ["TWITTER", "LINKEDIN"], scheduledAt: when, overrides: { TWITTER: "kısa" } });
+    expect(made.isError).toBe(false);
+    const { id } = made.json() as { id: string };
+
+    const row = await prisma.post.findUniqueOrThrow({ where: { id }, include: { platforms: true } });
+    expect(row.status).toBe("SCHEDULED"); // queued, not sent
+    expect(row.scheduledAt?.toISOString()).toBe(when);
+    expect(row.platforms.map((p) => p.status)).toEqual(["PENDING", "PENDING"]); // nothing claimed yet
+    expect((await call("get_post", { id })).json()).toMatchObject({ status: "SCHEDULED" });
+  });
+
+  it("schedules an existing draft as it is, atomically and only the owner's draft", async () => {
+    const { call } = await connect(userId);
+    const when = new Date(Date.now() + 2 * 60 * 60_000).toISOString();
+    const { id } = (await call("create_draft", { text: "taslak metni", platforms: ["TWITTER", "LINKEDIN"], overrides: { LINKEDIN: "li özel" } })).json() as { id: string };
+
+    expect((await call("schedule_post", { id, scheduledAt: when })).isError).toBe(false);
+    const row = await prisma.post.findUniqueOrThrow({ where: { id }, include: { platforms: true } });
+    expect(row.text).toBe("taslak metni");
+    expect(row.status).toBe("SCHEDULED");
+    expect(row.platforms.find((p) => p.platform === "LINKEDIN")!.text).toBe("li özel");
+    expect((await call("update_draft", { id, text: "artık değil" })).isError).toBe(true); // no longer a draft
+
+    // A draft that is already scheduled cannot be scheduled again, and another user's draft is out of reach
+    expect((await call("schedule_post", { id, scheduledAt: when })).isError).toBe(true);
+    const theirs = (await call("create_draft", { text: "başkasının", platforms: ["TWITTER"] })).json() as { id: string };
+    const other = await connect(otherId);
+    expect((await other.call("schedule_post", { id: theirs.id, scheduledAt: when })).isError).toBe(true);
+    expect((await prisma.post.findUniqueOrThrow({ where: { id: theirs.id } })).status).toBe("DRAFT");
+  });
+
+  it("refuses a past time, a mixed id+text call, and a missing platform list", async () => {
+    const { call } = await connect(userId);
+    const past = new Date(Date.now() - 10 * 60_000).toISOString();
+    expect((await call("schedule_post", { text: "geçmiş", platforms: ["TWITTER"], scheduledAt: past })).isError).toBe(true);
+
+    const when = new Date(Date.now() + 60 * 60_000).toISOString();
+    const { id } = (await call("create_draft", { text: "taslak", platforms: ["TWITTER"] })).json() as { id: string };
+    expect((await call("schedule_post", { id, text: "çakışma", scheduledAt: when })).isError).toBe(true);
+    expect((await call("schedule_post", { text: "platformsuz", scheduledAt: when })).isError).toBe(true);
+    expect((await prisma.post.findUniqueOrThrow({ where: { id } })).status).toBe("DRAFT"); // nothing moved
   });
 });
 

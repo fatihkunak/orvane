@@ -10,6 +10,14 @@ const mediaList = z
   .array(z.string().refine(isAllowedMediaUrl, "Geçersiz medya adresi"))
   .max(MAX_MEDIA_FILES, `En fazla ${MAX_MEDIA_FILES} medya`);
 
+/**
+ * ISO string with a timezone offset, at most a minute in the past. Single source for the "not in the past" rule: the form,
+ * the MCP schedule tool and anything else that takes a time must all go through this.
+ */
+export const scheduleTimeSchema = z.iso
+  .datetime({ offset: true })
+  .refine((v) => new Date(v).getTime() >= Date.now() - 60_000, "Zamanlama geçmişte olamaz");
+
 export const createPostSchema = z
   .object({
     /** The text for every platform without its own text in `overrides` (may be empty when all have one) */
@@ -44,7 +52,7 @@ export const createPostSchema = z
     if (v.mode === "schedule") {
       if (!v.scheduledAt) {
         ctx.addIssue({ code: "custom", path: ["scheduledAt"], message: "Tarih ve saat seç" });
-      } else if (new Date(v.scheduledAt).getTime() < Date.now() - 60_000) {
+      } else if (!scheduleTimeSchema.safeParse(v.scheduledAt).success) {
         ctx.addIssue({ code: "custom", path: ["scheduledAt"], message: "Zamanlama geçmişte olamaz" });
       }
     }
