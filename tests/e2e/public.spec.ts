@@ -32,6 +32,18 @@ test("protected pages redirect to login when signed out", async ({ request }) =>
   expect(res.headers()["location"] ?? "").toContain("/login");
 });
 
+test("login page loads without console errors", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("console", (m) => {
+    if (m.type() === "error") errors.push(m.text());
+  });
+  page.on("pageerror", (e) => errors.push(e.message));
+
+  await page.goto("/login");
+  await expect(page.getByRole("button", { name: /google/i })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
 test("security headers are present, CSP is report-only", async ({ request }) => {
   const res = await request.get("/login");
   const headers = res.headers();
