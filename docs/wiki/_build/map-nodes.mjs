@@ -14,7 +14,7 @@ const mapping = {
   TechStack: { paths: ['package.json'] },
   DesignSystem: { paths: ['app/globals.css'] },
   Providers: { paths: ['components/providers.tsx'] },
-  RootLayout: { paths: ['app/layout.tsx'] },
+  RootLayout: { paths: ['app/layout.tsx', 'app/error.tsx', 'app/not-found.tsx'] },
   Database: { paths: ['prisma/schema.prisma', 'prisma.config.ts', 'lib/prisma.ts'] },
   Layout: { paths: ['app/(dashboard)/layout.tsx', 'components/layout/nav-items.ts', 'components/layout/sidebar.tsx', 'components/layout/mobile-nav.tsx', 'components/layout/topbar.tsx', 'lib/queries/notifications.ts'] },
   Dashboard: { paths: ['app/(dashboard)/dashboard/page.tsx', 'components/dashboard/upcoming-posts.tsx', 'components/posts/post-row.tsx'] },

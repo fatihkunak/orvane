@@ -14,6 +14,24 @@ const nextConfig: NextConfig = {
       },
     },
   },
+  /**
+   * Baseline security headers. Deliberately no Content-Security-Policy: Next injects inline bootstrap scripts, and a policy
+   * without per-request nonces either breaks the app or is loose enough to be theatre. The rest are free wins:
+   * no MIME sniffing, no framing, no referrer leak to third parties, no device permissions we never ask for.
+   */
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

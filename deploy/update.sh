@@ -49,6 +49,9 @@ else
   say "[5/6] no systemd unit 'orvane' or pm2 app 'orvane': building while the app runs"
 fi
 
+# Logs can only be rotated while nothing holds them open (best effort: skipped when still locked)
+node deploy/rotate-logs.mjs || true
+
 say "[6/6] npm run build"
 if ! npm run build; then
   # Bring back what we stopped, so a failed build does not leave the instance down

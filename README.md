@@ -83,6 +83,27 @@ Güncelleme şunları yapar (`deploy/update.cmd` / `deploy/update.sh`): `git pul
 - **Linux/macOS:** `deploy/update.sh`; `orvane` adlı bir systemd birimi veya pm2 uygulaması varsa onunla durdurup başlatır, yoksa "kendin yeniden başlat" der.
 - **Yedek:** `pg_dump` PATH'te yoksa, veritabanı adresindeki portu yayınlayan Docker konteyneri üzerinden `pg_dump` çalıştırılır. İkisi de yoksa yedek atlanır ve güncelleme devam eder (log'a yazar).
 
+## Yedekten geri yükleme
+
+`deploy/logs/backup-<zaman>.sql` dosyaları `pg_dump --no-owner --no-privileges` ile alınır (son 5 tanesi tutulur). **Geri yükleme mevcut veriyi ezer**; önce uygulamayı durdur.
+
+```bash
+# 1) Uygulamayı durdur (Windows: port 3055'teki süreç; Linux: systemctl stop orvane)
+# 2) Boş bir şema ile başla
+docker exec -i orvane-postgres psql -U orvane -d orvane -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+# 3) Dökümü yükle
+docker exec -i orvane-postgres psql -U orvane -d orvane < deploy/logs/backup-2026-10-22T13-06-12.sql
+# 4) Uygulamayı başlat, /api/health 200 dönmeli
+```
+
+Windows PowerShell'de 3. adım:
+
+```powershell
+Get-Content deploy\logs\backup-2026-10-22T13-06-12.sql | docker exec -i orvane-postgres psql -U orvane -d orvane
+```
+
+Konteyner adı senin kurulumunda farklıysa (`docker ps`) onu yaz. Cloudinary'deki dosyalar dökümde **yoktur** (yalnız adresleri), medya dosyaları için `.uploads/` veya Cloudinary hesabını ayrıca yedekle.
+
 ## Nasıl çalışır
 
 1. **Giriş:** Google ile (Auth.js, JWT oturum). Dashboard rotaları `proxy.ts` + layout'ta korunur.

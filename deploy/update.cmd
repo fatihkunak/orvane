@@ -33,6 +33,9 @@ call :sleep 4
 powershell -NoProfile -Command "Get-NetTCPConnection -State Listen -LocalPort 3055 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }" >> "%LOG%" 2>&1
 call :sleep 2
 
+REM Logs can only be rotated while nothing holds them open
+call node deploy\rotate-logs.mjs >> "%LOG%" 2>&1
+
 echo [6/7] npm run build >> "%LOG%"
 call npm run build >> "%LOG%" 2>&1 || (echo UPDATE FAILED (build) - app left stopped, start it by hand >> "%LOG%" & exit /b 1)
 

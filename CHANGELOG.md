@@ -37,7 +37,11 @@ Bu dosya [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) biçimini izle
 ### Operasyon
 
 - `GET /api/health`: süreç + veritabanı hazırlığı (yeniden başlatma sonrası güncelleme kartı bunu bekler).
-- Tek tıkla güncelleme Windows ve Linux/macOS'ta (`deploy/update.cmd` / `deploy/update.sh`).
+- Tek tıkla güncelleme Windows ve Linux/macOS'ta (`deploy/update.cmd` / `deploy/update.sh`), öncesinde otomatik veritabanı yedeği.
+- Log rotasyonu: güncelleme sırasında uygulama durdurulduktan sonra `app.log`/`inngest.log` 5 MB'ı geçtiyse döndürülür (son 2 kopya).
+- Güvenlik başlıkları (`next.config.ts`): `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`.
+- Yükleme hız sınırı: kullanıcı başına 10 dakikada 40 dosya.
+- Özel `error.tsx` / `not-found.tsx`: hata ve 404 ekranları Türkçe, kayıt koduyla.
 
 ### Belgeler
 

@@ -54,7 +54,9 @@
   "RootLayout": {
     "category": "Frontend",
     "paths": [
-      "app/layout.tsx"
+      "app/layout.tsx",
+      "app/error.tsx",
+      "app/not-found.tsx"
     ],
     "missing": [],
     "noCode": false
