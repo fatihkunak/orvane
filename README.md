@@ -5,27 +5,73 @@ Tek içerik, tüm platformlar: Threads, LinkedIn ve X hesaplarını bağla; tek 
 
 Next.js (App Router) · TypeScript · Tailwind v4 · shadcn/ui · Prisma 7 + PostgreSQL · Auth.js v5 · Inngest · Recharts
 
-## Çalıştırma
+> **Durum:** Orvane şu an kendi bilgisayarında ya da sunucunda çalıştırdığın (self-host) bir projedir; herkese açık bir hizmet değildir. Platformların kendi geliştirici uygulamalarını (Google, LinkedIn, Threads, X) sen oluşturursun.
+
+## Özellikler
+
+- **Gönderi:** platform başına karakter sınırı ve canlı önizleme, en fazla 4 medya, taslak / zamanla / şimdi yayınla. İstersen her platform için **ayrı metin ve ayrı görsel**.
+- **Taslaklar:** form, yapay zekâ ve MCP'den gelen taslaklar `/drafts` sayfasında listelenir; açıp görsel ekler, zamanlar ya da yayınlarsın.
+- **AI ile yaz:** kendi anahtarınla 19 sağlayıcıdan biri (Gemini, Groq, OpenRouter, Anthropic, OpenAI, yerel Ollama/LM Studio...), yedek zinciri. Üretilenler yalnızca taslaktır.
+- **MCP:** LM Studio, Claude Code gibi istemciler kişisel belirteçle bağlanıp taslak hazırlar. Zamanlama ve yayın aracı yoktur, yayın hep senin onayınladır.
+- **Takvim, ana sayfa, analitik** (yalnızca Orvane'in kendi yayın verisi).
+
+## Kurulum (yerel geliştirme)
+
+Gerekenler: **Node.js 22+**, **Docker** (ya da kendi PostgreSQL 16'n) ve giriş için bir **Google hesabı**.
 
 ```bash
+git clone https://github.com/fatihkunak/orvane.git
+cd orvane
+
+docker compose up -d            # yerel PostgreSQL (docker-compose.yml)
+cp .env.example .env            # sonra aşağıdaki değerleri doldur
 npm install
-cp .env.example .env            # değerleri doldur (en az DATABASE_URL, DIRECT_URL, AUTH_SECRET, TOKEN_ENCRYPTION_KEY)
 npx prisma migrate dev          # veritabanı şemasını kurar
 npm run dev                     # http://localhost:3000
 
-# Zamanlanmış yayın için ayrı terminalde:
+# Zamanlanmış yayın için ayrı bir terminalde:
 npx inngest-cli@latest dev -u http://localhost:3000/api/inngest
 ```
 
+`.env` içinde doldurman gereken **en az** şunlar:
+
+| Değişken | Nasıl |
+|---|---|
+| `DATABASE_URL`, `DIRECT_URL` | `docker compose` kullandıysan: `postgresql://orvane:orvane@localhost:5432/orvane?schema=public` |
+| `AUTH_SECRET` | `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"` |
+| `TOKEN_ENCRYPTION_KEY` | aynı komut (32 bayt, base64). Platform ve AI anahtarlarını şifreler; değiştirirsen kayıtlı anahtarlar okunamaz olur |
+| `AUTH_URL`, `APP_URL` | `http://localhost:3000` |
+| `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | aşağıya bak |
+
+### Google ile giriş (zorunlu)
+
+1. [Google Cloud Console](https://console.cloud.google.com/) → bir proje → **APIs & Services → Credentials → Create credentials → OAuth client ID → Web application**.
+2. **Authorized redirect URI:** `http://localhost:3000/api/auth/callback/google`
+3. **OAuth consent screen**'de uygulamayı "Testing" modunda bırakıp kendi Google hesabını **test kullanıcısı** olarak ekle.
+4. Client ID ve Client Secret'ı `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` olarak `.env`'ye yaz.
+
 Uygulama içindeki **Ayarlar → Kurulum durumu** sayfası hangi entegrasyonların hazır olduğunu gösterir.
+
+## Platformları bağlama (isteğe bağlı, her biri ayrı)
+
+Hesaplar sayfasında bağlamak istediğin her platform için kendi geliştirici uygulamanı oluşturursun. Redirect adresi hepsinde `{APP_URL}/api/connect/<twitter|linkedin|threads>/callback`.
+
+- **X:** anahtarları `.env`'ye değil, uygulamada **Hesaplar → X** bölümüne girersin (callback adresi ve adımlar orada yazar). X, API kullanımını uygulamanın sahibine faturalar; yani gönderi maliyeti senin X hesabında kalır. Yalnızca tek kişilik, kapalı bir kurulumda `.env`'deki `TWITTER_CLIENT_ID/SECRET` ortak anahtarını kullanmak için `SHARED_X_APP=1` verebilirsin; başkalarının giriş yapabildiği bir kurulumda **verme**.
+- **LinkedIn:** `.env`'de `LINKEDIN_CLIENT_ID/SECRET`. Uygulamada "Share on LinkedIn" ve "Sign In with LinkedIn using OpenID Connect" ürünleri eklenmiş olmalı.
+- **Threads:** `.env`'de `THREADS_APP_ID/SECRET`. Threads yalnızca **HTTPS** yönlendirme adresi kabul eder; yerelde bir tünel (ör. Cloudflare Tunnel) kurup `APP_URL`/`AUTH_URL`'i o adrese çevir. Meta uygulaması geliştirme modundayken yalnızca davet ettiğin Threads test kullanıcıları bağlanabilir.
+- **Medya:** `CLOUDINARY_URL` yoksa yüklemeler yerel diske gider. Threads yerel adresleri indiremez, Threads'e görselli gönderi için Cloudinary gerekir.
+- **Yapay zekâ:** anahtarlar `.env`'de değil, **Ayarlar → Yapay zekâ sağlayıcıları** sayfasında girilir.
+- **MCP:** **Ayarlar → MCP** sayfasında belirteç oluşturup istemciye yapıştırırsın (örnekler orada).
 
 ## Nasıl çalışır
 
 1. **Giriş:** Google ile (Auth.js, JWT oturum). Dashboard rotaları `proxy.ts` + layout'ta korunur.
 2. **Hesap bağlama:** `/api/connect/<twitter|linkedin|threads>` → platformun onay ekranı → callback token'ları AES-256-GCM ile şifreleyip `SocialAccount`'a yazar. X için PKCE, tüm akışlarda `state` + httpOnly çerez ile CSRF koruması.
-3. **Gönderi:** `/posts/new` formu; platform başına karakter sınırı, medya yükleme (Cloudinary ya da yerel), taslak / zamanla / şimdi yayınla.
+3. **Gönderi:** `/posts/new` formu; platform başına karakter sınırı, medya yükleme, taslak / zamanla / şimdi yayınla.
 4. **Yayın:** Inngest her dakika `SCHEDULED` ve zamanı gelmiş gönderileri bulur, her biri için `post/publish.requested` olayı üretir. `publish-post` fonksiyonu her platformu ayrı adımda yayınlar; bir platformun hatası diğerlerini engellemez. Çift gönderim, veritabanında atomik "claim" ile engellenir.
 5. **Token yenileme:** X token'ı (2 saat) yayından hemen önce, Threads/LinkedIn günlük işle yenilenir.
+
+Ayrıntılı mimari: [`docs/wiki/`](docs/wiki/Index.md).
 
 ## Test
 
@@ -35,13 +81,14 @@ npm run lint
 npx tsc --noEmit
 ```
 
-Platform çağrıları testlerde sahte `fetch` ile doğrulanır; gerçek API'lere karşı yalnızca geçersiz token ile hata yolu denenmiştir (bkz. `docs/wiki/Publishing.md`).
+Platform çağrıları testlerde sahte `fetch` ile doğrulanır. Gerçek hesaplarla yayın, geliştiricinin kendi hesaplarında denenmiştir (bkz. `docs/wiki/Publishing.md`).
 
 ## Önemli notlar
 
 - `prisma` CLI ve `@prisma/client` aynı sürüme sabit (7.10.1); `prisma@latest` şu an 8.0 RC.
 - Medya adresleri yalnızca bu uygulamanın yüklemeleri ya da kendi Cloudinary hesabın olabilir (SSRF koruması, `lib/media.ts`).
-- Threads medya URL'lerini kendisi indirir; yerel `localhost` dosyaları çalışmaz, Cloudinary gerekir.
+- Yapay zekâ için yerel sunuculara (Ollama, LM Studio) bağlanmak `ALLOW_PRIVATE_LLM_URLS=1` ister ve yalnızca kendi bilgisayarında, dışarıya açık olmayan bir kurulumda açılmalıdır.
+- Yönetim API'si (`/api/admin/*`) `ORVANE_ADMIN_TOKEN` (en az 32 karakter) tanımlı değilse kapalıdır.
 - Erişim/etkileşim metrikleri her platformun analitik API izni gerektirir; Analitik sayfası şimdilik yalnızca Orvane'in kendi yayın verilerini gösterir.
 
 ## Lisans
