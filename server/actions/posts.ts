@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { inngest, POST_PUBLISH_REQUESTED, publishEventId } from "@/inngest/client";
 import { prisma } from "@/lib/prisma";
 import { createPostForUser, reschedulePostForUser, updateDraftForUser, type CreatePostResult } from "@/lib/post-create";
+import { removeUnreferencedMedia } from "@/lib/media-cleanup";
 import type { CreatePostInput } from "@/lib/validation/post";
 
 export type ActionResult<T = object> = ({ ok: true } & T) | { ok: false; error: string };
@@ -56,16 +57,26 @@ export async function reschedulePostAction(postId: string, scheduledAt: string):
   return { ok: true };
 }
 
-/** Deletes a post that has not been published yet. */export async function deletePostAction(postId: string): Promise<ActionResult> {
+/** Deletes a post that has not been published yet, together with media files nothing references any more. */
+export async function deletePostAction(postId: string): Promise<ActionResult> {
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) return { ok: false, error: "Oturum süresi doldu" };
 
-  // deleteMany scopes by owner, so another user's id simply matches nothing
+  const post = await prisma.post.findFirst({
+    where: { id: postId, userId, status: { in: ["DRAFT", "SCHEDULED", "FAILED"] } },
+    select: { mediaUrls: true, platforms: { select: { mediaUrls: true } } },
+  });
+  if (!post) return { ok: false, error: "Gönderi silinemedi (yayınlanmış olabilir)" };
+
+  // deleteMany still scopes by owner, so a status change between the read and the delete cannot remove another row
   const { count } = await prisma.post.deleteMany({
     where: { id: postId, userId, status: { in: ["DRAFT", "SCHEDULED", "FAILED"] } },
   });
   if (!count) return { ok: false, error: "Gönderi silinemedi (yayınlanmış olabilir)" };
+
+  // Shared files survive: removeUnreferencedMedia checks every post and platform row
+  await removeUnreferencedMedia([...post.mediaUrls, ...post.platforms.flatMap((p) => p.mediaUrls)]);
 
   revalidatePath("/dashboard");
   revalidatePath("/calendar");

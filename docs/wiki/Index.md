@@ -48,3 +48,4 @@
 
 ## 🧪 Kalite
 - [[Tests]] — vitest: birim + gerçek DB entegrasyonu, neyin gerçek API'ye karşı denendiği
+- [[Health]] — `/api/health`: süreç + veritabanı hazırlığı, güncelleme sonrası bekleme

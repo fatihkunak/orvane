@@ -40,7 +40,8 @@ export function VersionCard() {
     // The server goes down shortly: wait until it answers again, then reload into the new build
     const poll = setInterval(async () => {
       try {
-        const res = await fetch("/login", { cache: "no-store" });
+        const res = await fetch("/api/health", { cache: "no-store" });
+        // 200 = process up AND database reachable (503 means it is still migrating or the DB is not ready)
         if (res.ok) {
           clearInterval(poll);
           window.location.reload();

@@ -26,6 +26,26 @@ export function absoluteMediaUrl(url: string): string {
   return new URL(url, base).toString();
 }
 
+const LOCAL_MEDIA_PREFIX = "/api/media/";
+const LOCAL_MEDIA_NAME = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|png|gif|mp4)$/;
+
+/**
+ * File names of THIS app's local uploads in a set of media URLs. Anything else (Cloudinary, a foreign path) is ignored, so a
+ * stored URL can never point at a file outside `.uploads`. Used by account deletion and the media sweeper.
+ */
+export function localMediaNames(urls: Iterable<string>): string[] {
+  const names = new Set<string>();
+  for (const u of urls) {
+    if (!u.startsWith(LOCAL_MEDIA_PREFIX)) continue;
+    const name = u.slice(LOCAL_MEDIA_PREFIX.length);
+    if (LOCAL_MEDIA_NAME.test(name)) names.add(name);
+  }
+  return [...names];
+}
+
+/** Inverse of `localMediaNames`: the URL a local file is served from. */
+export const localMediaUrl = (name: string) => `${LOCAL_MEDIA_PREFIX}${name}`;
+
 const LOCAL_MEDIA = /^\/api\/media\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|png|gif|mp4)$/;
 
 /** Cloud name from CLOUDINARY_URL (cloudinary://key:secret@<cloud>), without ever touching the secret. */

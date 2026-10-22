@@ -24,7 +24,7 @@ const mapping = {
   Analytics: { paths: ['lib/queries/analytics.ts', 'components/analytics/analytics-view.tsx', 'app/(dashboard)/analytics/page.tsx'] },
   Settings: { paths: ['app/(dashboard)/settings/page.tsx', 'lib/update.ts', 'server/actions/update.ts', 'components/settings/version-card.tsx', 'lib/account.ts', 'server/actions/account.ts', 'components/settings/delete-account.tsx', 'deploy/update.cmd', 'deploy/start-app.cmd', 'tests/update.test.ts', 'tests/account-deletion.test.ts'] },
   Posts: { paths: ['components/posts/create-post-form.tsx', 'components/posts/draft-row.tsx', 'app/(dashboard)/drafts/page.tsx', 'app/(dashboard)/posts/[id]/edit/page.tsx', 'lib/post-create.ts', 'tests/drafts.test.ts', 'components/platform/platform-selector.tsx', 'lib/validation/post.ts', 'lib/char-count.ts', 'server/actions/posts.ts', 'lib/queries/posts.ts', 'lib/post-types.ts'] },
-  Media: { paths: ['lib/media.ts', 'lib/media-store.ts', 'app/api/upload/route.ts', 'app/api/media/[name]/route.ts'] },
+  Media: { paths: ['lib/media.ts', 'lib/media-store.ts', 'lib/media-cleanup.ts', 'app/api/upload/route.ts', 'app/api/media/[name]/route.ts', 'tests/media-cleanup.test.ts'] },
   Accounts: { paths: ['lib/social/app-credentials.ts', 'components/platform/app-keys-form.tsx', 'tests/app-credentials.test.ts', 'lib/social/providers.ts', 'lib/social/oauth-flow.ts', 'lib/social/tokens.ts', 'lib/crypto.ts', 'server/actions/accounts.ts', 'app/(dashboard)/accounts/page.tsx', 'app/api/connect/[provider]/route.ts'] },
   Publishing: { paths: ['lib/publishing.ts', 'lib/social/publishers/shared.ts', 'lib/social/publishers/twitter.ts', 'lib/social/publishers/linkedin.ts', 'lib/social/publishers/threads.ts'] },
   Inngest: { paths: ['inngest/client.ts', 'inngest/functions.ts', 'app/api/inngest/route.ts'] },
@@ -34,6 +34,7 @@ const mapping = {
   AiSettings: { paths: ['app/(dashboard)/settings/ai/page.tsx', 'components/ai/provider-manager.tsx', 'lib/ai/store.ts', 'components/ui/native-select.tsx'] },
   Mcp: { paths: ['app/api/mcp/route.ts', 'lib/mcp/server.ts', 'lib/api-tokens.ts', 'lib/post-create.ts', 'app/(dashboard)/settings/mcp/page.tsx', 'components/mcp/token-manager.tsx', 'server/actions/mcp.ts', 'tests/mcp-admin.test.ts'] },
   AdminApi: { paths: ['lib/admin-api.ts', 'lib/admin-users.ts', 'app/api/admin/users/route.ts', 'app/api/admin/users/[id]/route.ts', 'app/api/admin/users/[id]/suspend/route.ts', 'app/api/admin/stats/route.ts', 'app/suspended/page.tsx'] },
+  Health: { paths: ['app/api/health/route.ts'] },
   Auth: { paths: ['auth.config.ts', 'auth.ts', 'proxy.ts', 'app/api/auth/[...nextauth]/route.ts', 'app/login/page.tsx'] },
 };
 

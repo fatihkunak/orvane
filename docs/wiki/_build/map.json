@@ -161,8 +161,10 @@
     "paths": [
       "lib/media.ts",
       "lib/media-store.ts",
+      "lib/media-cleanup.ts",
       "app/api/upload/route.ts",
-      "app/api/media/[name]/route.ts"
+      "app/api/media/[name]/route.ts",
+      "tests/media-cleanup.test.ts"
     ],
     "missing": [],
     "noCode": false
@@ -289,6 +291,14 @@
       "tests/ai-image.test.ts",
       "tests/mcp-admin.test.ts",
       "tests/update.test.ts"
+    ],
+    "missing": [],
+    "noCode": false
+  },
+  "Health": {
+    "category": "Kalite",
+    "paths": [
+      "app/api/health/route.ts"
     ],
     "missing": [],
     "noCode": false

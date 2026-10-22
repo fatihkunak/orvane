@@ -4,7 +4,8 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { prisma } from "@/lib/prisma";
 import { encrypt } from "@/lib/crypto";
-import { deleteUserAccount, localMediaNames } from "@/lib/account";
+import { deleteUserAccount } from "@/lib/account";
+import { localMediaNames } from "@/lib/media";
 import { createPostForUser } from "@/lib/post-create";
 import { createApiToken } from "@/lib/api-tokens";
 

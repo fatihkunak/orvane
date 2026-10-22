@@ -15,6 +15,7 @@ import {
   type PublishTarget,
 } from "@/lib/publishing";
 import { PublishError } from "@/lib/social/publishers/shared";
+import { sweepOrphanMedia } from "@/lib/media-cleanup";
 import {
   THREADS_MEDIA_WAIT_SECONDS,
   createThreadsContainer,
@@ -133,4 +134,13 @@ export const refreshTokens = inngest.createFunction(
   },
 );
 
-export const functions = [schedulePosts, publishPost, refreshTokens];
+/**
+ * Daily: remove leftover local uploads -- files nothing references and that are older than a day. The age guard keeps a file that
+ * was just uploaded into a form (or a request still in flight); referenced files are never touched (see lib/media-cleanup.ts).
+ */
+export const cleanupOrphanMedia = inngest.createFunction(
+  { id: "cleanup-orphan-media", triggers: [{ cron: "30 4 * * *" }] },
+  async ({ step }) => step.run("sweep-uploads", () => sweepOrphanMedia()),
+);
+
+export const functions = [schedulePosts, publishPost, refreshTokens, cleanupOrphanMedia];
