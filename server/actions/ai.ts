@@ -6,6 +6,8 @@ import { AiError, type AiErrorCode } from "@/lib/ai/errors";
 import type { GenerateInput } from "@/lib/ai/prompt";
 import { takeToken } from "@/lib/ai/rate-limit";
 import { checkProviderForUser, fetchModelsForUser, generateForUser, type GenerateResult, type ProbeInput } from "@/lib/ai/service";
+import { IMAGE_SIZES, type ImageSize } from "@/lib/ai/image";
+import { generateImageForUser, type ImageResult } from "@/lib/ai/image-service";
 import { makePrimary, moveConfig, removeConfig, saveConfig, type SaveInput } from "@/lib/ai/store";
 
 /** Like ActionResult, plus the error code so the UI can offer the right next step (e.g. "add a provider"). */
@@ -13,6 +15,8 @@ export type AiActionResult<T = object> = ({ ok: true } & T) | { ok: false; error
 
 const GENERATE_LIMIT = { count: 20, windowMs: 10 * 60_000 };
 const PROBE_LIMIT = { count: 30, windowMs: 10 * 60_000 };
+/** Drawing is far more expensive than writing, so it gets its own, tighter bucket */
+const IMAGE_LIMIT = { count: 10, windowMs: 10 * 60_000 };
 
 function fail(e: unknown): { ok: false; error: string; code?: AiErrorCode } {
   if (e instanceof AiError) return { ok: false, error: e.message, code: e.code };
@@ -26,8 +30,8 @@ async function signedIn(): Promise<string | null> {
 
 const SESSION_EXPIRED = { ok: false, error: "Oturum süresi doldu" } as const;
 
-function limited(userId: string, bucket: "gen" | "probe"): { ok: false; error: string; code: AiErrorCode } | null {
-  const cfg = bucket === "gen" ? GENERATE_LIMIT : PROBE_LIMIT;
+function limited(userId: string, bucket: "gen" | "probe" | "image"): { ok: false; error: string; code: AiErrorCode } | null {
+  const cfg = bucket === "gen" ? GENERATE_LIMIT : bucket === "image" ? IMAGE_LIMIT : PROBE_LIMIT;
   const t = takeToken(`${bucket}:${userId}`, cfg.count, cfg.windowMs);
   return t.ok ? null : { ok: false, error: `Çok fazla istek. ${t.retryAfterSec} sn sonra tekrar dene.`, code: "RATE_LIMIT" };
 }
@@ -115,6 +119,28 @@ export async function generatePostAction(input: GenerateInput): Promise<AiAction
   if (blocked) return blocked;
   try {
     return { ok: true, result: await generateForUser(userId, input) };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/**
+ * Draws ONE image with the user's own provider and stores it as post media. Nothing is published and nothing is attached
+ * automatically: the panel shows the result and the person decides, exactly like a written draft.
+ */
+export async function generatePostImageAction(input: {
+  prompt: string;
+  size?: ImageSize;
+  providerId?: string;
+}): Promise<AiActionResult<{ image: ImageResult }>> {
+  const userId = await signedIn();
+  if (!userId) return SESSION_EXPIRED;
+  const blocked = limited(userId, "image");
+  if (blocked) return blocked;
+  try {
+    // The size comes from the browser: only the offered ratios may reach a provider
+    const size = input.size && (IMAGE_SIZES as readonly string[]).includes(input.size) ? input.size : undefined;
+    return { ok: true, image: await generateImageForUser(userId, { prompt: input.prompt, size, providerId: input.providerId }) };
   } catch (e) {
     return fail(e);
   }

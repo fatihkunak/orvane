@@ -26,7 +26,7 @@ export default async function NewPostPage() {
   // Only what the form needs: never the key
   const aiProviders: AiProviderOption[] = aiConfigs.map((c) => {
     const info = getProvider(c.provider)!;
-    return { id: c.provider, label: info.label, model: c.model ?? info.defaultModel ?? null };
+    return { id: c.provider, label: info.label, model: c.model ?? info.defaultModel ?? null, canDraw: !!(c.imageModel || info.imageModels?.length) };
   });
 
   return (

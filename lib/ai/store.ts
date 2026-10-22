@@ -16,6 +16,7 @@ export interface ProviderView {
   hasKey: boolean;
   baseUrl: string | null;
   model: string | null;
+  imageModel: string | null;
   position: number;
 }
 
@@ -27,6 +28,8 @@ export interface ChainEntry {
   /** The user's typed address (custom/alibaba/local), if any */
   baseUrl: string | null;
   model: string | null;
+  /** Image generation model id; null = the registry default list for this provider */
+  imageModel: string | null;
   /** The stored key could not be decrypted (TOKEN_ENCRYPTION_KEY changed): treat as missing */
   keyBroken: boolean;
 }
@@ -35,7 +38,7 @@ export async function listConfigs(userId: string): Promise<ProviderView[]> {
   const rows = await prisma.aiProviderConfig.findMany({ where: { userId }, orderBy: { position: "asc" } });
   return rows
     .filter((r) => getProvider(r.provider))
-    .map((r) => ({ provider: r.provider, hasKey: !!r.apiKey, baseUrl: r.baseUrl, model: r.model, position: r.position }));
+    .map((r) => ({ provider: r.provider, hasKey: !!r.apiKey, baseUrl: r.baseUrl, model: r.model, imageModel: r.imageModel, position: r.position }));
 }
 
 /** The user's providers in order: the primary first, then the backups. */
@@ -54,7 +57,7 @@ export async function loadChain(userId: string): Promise<ChainEntry[]> {
         keyBroken = true;
       }
     }
-    out.push({ provider: r.provider, info, apiKey, baseUrl: r.baseUrl, model: r.model, keyBroken });
+    out.push({ provider: r.provider, info, apiKey, baseUrl: r.baseUrl, model: r.model, imageModel: r.imageModel, keyBroken });
   }
   return out;
 }
@@ -65,6 +68,8 @@ export interface SaveInput {
   apiKey?: string;
   baseUrl?: string;
   model?: string;
+  /** Image generation model; empty clears it, which falls back to the registry defaults */
+  imageModel?: string;
 }
 
 const MODEL_RE = /^[^\s\x00-\x1f]{1,200}$/;
@@ -102,6 +107,7 @@ export async function saveConfig(userId: string, input: SaveInput): Promise<void
   const key = cleanKey(input.apiKey);
   const baseUrl = await cleanBaseUrl(info, input.baseUrl);
   const model = cleanModel(input.model);
+  const imageModel = cleanModel(input.imageModel);
 
   const existing = await prisma.aiProviderConfig.findUnique({ where: { userId_provider: { userId, provider: info.id } } });
   if (!existing && info.needsKey && !key) throw new AiError("NO_KEY", `${info.label} için API anahtarı gerekli.`);
@@ -109,13 +115,13 @@ export async function saveConfig(userId: string, input: SaveInput): Promise<void
   if (existing) {
     await prisma.aiProviderConfig.update({
       where: { id: existing.id },
-      data: { ...(key ? { apiKey: encrypt(key) } : {}), baseUrl, model },
+      data: { ...(key ? { apiKey: encrypt(key) } : {}), baseUrl, model, imageModel },
     });
     return;
   }
   const last = await prisma.aiProviderConfig.aggregate({ where: { userId }, _max: { position: true } });
   await prisma.aiProviderConfig.create({
-    data: { userId, provider: info.id, apiKey: key ? encrypt(key) : null, baseUrl, model, position: (last._max.position ?? -1) + 1 },
+    data: { userId, provider: info.id, apiKey: key ? encrypt(key) : null, baseUrl, model, imageModel, position: (last._max.position ?? -1) + 1 },
   });
 }
 

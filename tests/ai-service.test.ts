@@ -40,7 +40,7 @@ describe("provider settings store", () => {
     expect(decrypt(row.apiKey!)).toBe(KEY);
 
     const view = await listConfigs(userId);
-    expect(view).toEqual([{ provider: "groq", hasKey: true, baseUrl: null, model: null, position: 0 }]);
+    expect(view).toEqual([{ provider: "groq", hasKey: true, baseUrl: null, model: null, imageModel: null, position: 0 }]);
     expect(JSON.stringify(view)).not.toContain(KEY);
     expect((await loadChain(userId))[0]!.apiKey).toBe(KEY);
   });

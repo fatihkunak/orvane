@@ -10,5 +10,12 @@ Gönderi formundaki **"AI ile yaz"** paneli ve arkasındaki üretim hattı. Üre
 - **Gözlem:** Gemini (`gemini-3.5-flash-lite`) bir denemede ayrıştırılamayan çıktı verdi (BAD_OUTPUT → yedek devraldı), tekrarda 3 platform 4,1 sn'de temiz geçti; aralıklı.
 - **Eylem:** `server/actions/ai.ts` `generatePostAction` (oturum şart, kullanıcı başına 20 istek/10 dk, `lib/ai/rate-limit.ts`; hata kodları UI'ya gider, anahtar asla).
 - **Sınırlar:** brief ≤2000, mevcut metin ≤5000 karakter. İstem seçilen sağlayıcıya gider (gizlilik metni bunu söylemeli).
+- **Görsel üretimi (2026-10-22):** AI panelinde üçüncü sekme "Görsel üret". İstem (`MAX_IMAGE_PROMPT_CHARS` 1000) → sağlayıcı → tek görsel → **gönderi medyası** olarak kaydedilir; "Kullan" medya listesine ekler (paylaşılan liste, en fazla `MAX_MEDIA_FILES` 4). Yayınlanmaz, otomatik eklenmez.
+  - Uç: **OpenAI-uyumlu** `POST <baseUrl>/images/generations` (`response_format: "b64_json"`), tek adaptör: Gemini (`/v1beta/openai/images/generations`, modeller `gemini-2.5-flash-image` / `gemini-3-pro-image-preview`), OpenAI (`gpt-image-1`), Together (FLUX) ve **evren görsel modeli yayınladığında** (aynı diyalekt). `lib/ai/image.ts` (saf) + `lib/ai/image-meta.ts` (istemci tarafı sabitler; `node:dns` çekmesin diye ayrı).
+  - **URL cevabı reddedilir:** yalnız base64 kabul edilir; sağlayıcının verdiği adresi sunucuda indirmek SSRF olurdu ([[Media]]). Biçim, sağlayıcının iddiasından değil **magic bytes**'tan okunur (PNG/JPEG/GIF; WebP algılanır ama kabul edilmez).
+  - Zincir: tercih edilen sağlayıcı önce, görsel üretemeyen atlanır (`BAD_CONFIG` → yedek), kota yedeği model başına (`withModelFallback`), sonuç `lib/ai/image-service.ts` → `storeMediaBytes` ([[Media]]) → `/api/media/<uuid>.png` veya Cloudinary.
+  - Eylem: `generatePostImageAction` (oturum + **ayrı** hız sınırı 10/10 dk; metin üretimi 20/10 dk ile karışmaz). Boyut/limit doğrulaması sunucuda da yapılır (istemciden gelen `size` yalnız üç orandan biri olabilir).
+  - **Sağlayıcı ayarı:** her sağlayıcı için ayrı `AiProviderConfig.imageModel` ([[AiSettings]]); boşsa kayıttaki varsayılan liste. evren'de bugün görsel modeli yok (uç 404), alan hazır.
+  - **Doğrulama:** `tests/ai-image.test.ts` — istek/ayrıştırma/limitler, URL reddi, zincir seçimi, gerçek DB + yerel HTTP stub ile uçtan uca (görsel `.uploads`'a yazıldı) ve kota hatasında yedek. Gemini/OpenAI'ye **gerçek anahtarla** denenmedi; tarayıcıda tıklanarak da DENENMEDİ (UI yalnız derleme + lint + tip düzeyinde doğrulandı).
 
 Bkz. [[AiProviders]], [[AiSettings]], [[Posts]].

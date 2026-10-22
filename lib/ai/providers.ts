@@ -40,6 +40,13 @@ export interface ProviderInfo {
   fallbackModels?: readonly string[];
   /** Short hint shown under the provider name in the settings UI */
   note?: string;
+  /**
+   * Image generation models for the OpenAI-compatible `POST <baseUrl>/images/generations` (Gemini, OpenAI and Together all
+   * speak it). Like the chat ids these go stale, so the user may type their own in settings. Missing/empty = cannot draw.
+   */
+  imageModels?: readonly string[];
+  /** Shown under the image-model field in settings */
+  imageNote?: string;
 }
 
 export const GROUP_LABELS: Record<ProviderGroup, string> = {
@@ -51,7 +58,7 @@ export const GROUP_LABELS: Record<ProviderGroup, string> = {
 
 export const GROUP_ORDER: ProviderGroup[] = ["free", "paid", "local", "other"];
 
-type Extra = Partial<Pick<ProviderInfo, "maxTokensParam" | "auth" | "fallbackModels" | "note" | "needsKey">>;
+type Extra = Partial<Pick<ProviderInfo, "maxTokensParam" | "auth" | "fallbackModels" | "note" | "needsKey" | "imageModels" | "imageNote">>;
 
 const p = (
   id: string,
@@ -81,6 +88,8 @@ export const PROVIDERS: readonly ProviderInfo[] = [
   p("gemini", "Google Gemini", "openai", "free", "https://generativelanguage.googleapis.com/v1beta/openai", "gemini-3.8-flash", "https://aistudio.google.com/apikey", {
     fallbackModels: ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3-flash-preview"],
     note: "Ücretsiz kota model başınadır",
+    // Gemini's OpenAI compatibility layer exposes image generation at /images/generations
+    imageModels: ["gemini-2.5-flash-image", "gemini-3-pro-image-preview"],
   }),
   p("groq", "Groq", "openai", "free", "https://api.groq.com/openai/v1", "qwen/qwen3.8-27b", "https://console.groq.com/keys"),
   p("openrouter", "OpenRouter", "openai", "free", "https://openrouter.ai/api/v1", "openrouter/free", "https://openrouter.ai/keys", {
@@ -93,11 +102,14 @@ export const PROVIDERS: readonly ProviderInfo[] = [
   p("anthropic", "Anthropic Claude", "anthropic", "paid", "https://api.anthropic.com/v1", "claude-haiku-5-5", "https://console.anthropic.com/settings/keys"),
   p("openai", "OpenAI", "openai", "paid", "https://api.openai.com/v1", "gpt-6-luna", "https://platform.openai.com/api-keys", {
     maxTokensParam: "max_completion_tokens",
+    imageModels: ["gpt-image-1"],
   }),
   p("kimi", "Kimi (Moonshot)", "openai", "paid", "https://api.moonshot.ai/v1", "kimi-k2.6", "https://platform.moonshot.ai/console/api-keys"),
   p("xai", "xAI Grok", "openai", "paid", "https://api.x.ai/v1", undefined, "https://console.x.ai"),
   p("deepseek", "DeepSeek", "openai", "paid", "https://api.deepseek.com/v1", "deepseek-chat", "https://platform.deepseek.com/api_keys"),
-  p("together", "Together AI", "openai", "paid", "https://api.together.xyz/v1", undefined, "https://api.together.ai/settings/api-keys"),
+  p("together", "Together AI", "openai", "paid", "https://api.together.xyz/v1", undefined, "https://api.together.ai/settings/api-keys", {
+    imageModels: ["black-forest-labs/FLUX.1-schnell"],
+  }),
   p("fireworks", "Fireworks AI", "openai", "paid", "https://api.fireworks.ai/inference/v1", undefined, "https://app.fireworks.ai/settings/users/api-keys"),
   // Local servers on the machine that runs Orvane. Blocked unless ALLOW_PRIVATE_LLM_URLS=1 (SSRF guard).
   p("ollama", "Ollama", "openai", "local", "http://localhost:11434/v1", undefined, "https://ollama.com/download", {
@@ -112,6 +124,7 @@ export const PROVIDERS: readonly ProviderInfo[] = [
   // Other
   p("evren", "EVREN LLM", "openai", "other", "https://evren-llmapi.ssyz.org.tr/v1", undefined, "https://evren.ssyz.org.tr/llm-inference/", {
     auth: "x-api-key",
+    imageNote: "Henüz görsel modeli yok; yayınlandığında model adını buraya yaz",
   }),
   // The endpoint is specific to the WORKSPACE (https://ws-<id>.<region>.maas.aliyuncs.com/compatible-mode/v1): the user types it
   p("alibaba", "Alibaba Qwen (Model Studio)", "openai", "other", undefined, undefined, "https://modelstudio.console.alibabacloud.com/", {

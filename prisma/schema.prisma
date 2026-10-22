@@ -115,6 +115,9 @@ model AiProviderConfig {
   baseUrl   String?
   /// Chosen model id; null means the registry default
   model     String?
+  /// Model id for image generation (POST /images/generations). Null = the registry default for this provider, if any.
+  /// Kept apart from `model` because chatting and drawing use different model families.
+  imageModel String?
   /// 0 = primary provider, 1.. = backups tried in order when the previous one fails
   position  Int      @default(0)
   createdAt DateTime @default(now())

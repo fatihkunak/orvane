@@ -20,7 +20,7 @@ import {
 import { cn } from "@/lib/utils";
 
 /** What the page knows about a saved provider. The key itself never reaches the browser. */
-export type ConfigView = { provider: string; hasKey: boolean; baseUrl: string | null; model: string | null; position: number };
+export type ConfigView = { provider: string; hasKey: boolean; baseUrl: string | null; model: string | null; imageModel: string | null; position: number };
 
 type Note = { ok: boolean; text: string };
 
@@ -195,12 +195,13 @@ function ProviderEditor({ info, config, privateUrlsAllowed, onClose }: { info: P
   const [apiKey, setApiKey] = useState("");
   const [baseUrl, setBaseUrl] = useState(config?.baseUrl ?? "");
   const [model, setModel] = useState(config?.model ?? "");
+  const [imageModel, setImageModel] = useState(config?.imageModel ?? "");
   const [models, setModels] = useState<string[]>([]);
   const [busy, setBusy] = useState<"save" | "check" | "models" | null>(null);
   const [note, setNote] = useState<Note | null>(null);
 
   const editableUrl = baseUrlEditable(info);
-  const payload = { provider: info.id, apiKey: apiKey || undefined, baseUrl: editableUrl ? baseUrl : undefined, model };
+  const payload = { provider: info.id, apiKey: apiKey || undefined, baseUrl: editableUrl ? baseUrl : undefined, model, imageModel };
 
   async function run(kind: "save" | "check" | "models") {
     setBusy(kind);
@@ -312,6 +313,25 @@ function ProviderEditor({ info, config, privateUrlsAllowed, onClose }: { info: P
           )}
           <p className="text-muted-foreground text-xs">
             {info.defaultModel ? `Boş bırakırsan ${info.defaultModel} kullanılır. ` : "Bu sağlayıcıda bir model seçmen gerekir. "}Model adları çabuk eskir, güncel listeyi sağlayıcıdan çekebilirsin.
+          </p>
+        </div>
+
+        <div className="space-y-1.5 sm:col-span-2">
+          <Label htmlFor={`${listId}-image-model`}>Görsel modeli (isteğe bağlı)</Label>
+          <Input
+            id={`${listId}-image-model`}
+            value={imageModel}
+            onChange={(e) => setImageModel(e.target.value)}
+            placeholder={info.imageModels?.[0] ?? "Görsel üretmiyorsa boş bırak"}
+            autoComplete="off"
+            spellCheck={false}
+            className="bg-surface-2 h-9"
+          />
+          <p className="text-muted-foreground text-xs">
+            {info.imageModels?.length
+              ? `Boş bırakırsan ${info.imageModels[0]} ile başlanır (yedek: ${info.imageModels.slice(1).join(", ") || "yok"}). `
+              : "Bu sağlayıcı için bilinen bir görsel modeli yok. "}
+            {info.imageNote ?? "Gönderi formundaki “Görsel üret” bu modeli kullanır; OpenAI uyumlu /images/generations ucunu konuşmalı."}
           </p>
         </div>
       </div>

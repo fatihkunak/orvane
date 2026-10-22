@@ -36,7 +36,7 @@
 
 ## 🧠 Yapay Zekâ
 - [[AiProviders]] — 19 sağlayıcılı BYOK kaydı, istemci, SSRF koruması, yedek zinciri
-- [[AiGeneration]] — "AI ile yaz" paneli, istem/ayrıştırma, üret → değerlendir → onar hattı
+- [[AiGeneration]] — "AI ile yaz" paneli, istem/ayrıştırma, üret → değerlendir → onar hattı; ayrıca "Görsel üret" sekmesi (gönderi medyası)
 - [[AiSettings]] — `/settings/ai`: zincir, model listesi, anahtar sınama, şifreli depo
 
 ## 🔌 Entegrasyonlar

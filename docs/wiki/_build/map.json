@@ -149,6 +149,7 @@
     "category": "Gönderi & Medya",
     "paths": [
       "lib/media.ts",
+      "lib/media-store.ts",
       "app/api/upload/route.ts",
       "app/api/media/[name]/route.ts"
     ],
@@ -174,8 +175,12 @@
       "components/ai/ai-assistant.tsx",
       "lib/ai/prompt.ts",
       "lib/ai/service.ts",
+      "lib/ai/image.ts",
+      "lib/ai/image-meta.ts",
+      "lib/ai/image-service.ts",
       "lib/ai/rate-limit.ts",
-      "server/actions/ai.ts"
+      "server/actions/ai.ts",
+      "tests/ai-image.test.ts"
     ],
     "missing": [],
     "noCode": false
@@ -269,6 +274,7 @@
       "tests/oauth-flow.test.ts",
       "tests/ai-core.test.ts",
       "tests/ai-service.test.ts",
+      "tests/ai-image.test.ts",
       "tests/mcp-admin.test.ts"
     ],
     "missing": [],

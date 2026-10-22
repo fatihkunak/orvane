@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Check, ChevronDown, Copy, Loader2, Sparkles } from "lucide-react";
+import { Check, ChevronDown, Copy, ImagePlus, Loader2, Sparkles } from "lucide-react";
 import type { Platform } from "@/generated/prisma/enums";
 import { PlatformGlyph } from "@/components/platform/platform-icon";
 import { Button } from "@/components/ui/button";
@@ -13,31 +13,40 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { LANGUAGES, MAX_BRIEF_CHARS, REWRITE_ACTIONS, TONES, type LanguageCode, type RewriteAction, type Tone } from "@/lib/ai/prompt";
+import { IMAGE_SIZE_LABELS, IMAGE_SIZES, MAX_IMAGE_PROMPT_CHARS, type ImageSize } from "@/lib/ai/image-meta";
 import type { GenerateResult } from "@/lib/ai/service";
+import type { ImageResult } from "@/lib/ai/image-service";
+import { MAX_MEDIA_FILES } from "@/lib/media";
 import { PLATFORMS } from "@/lib/platforms";
 import { cn } from "@/lib/utils";
-import { generatePostAction } from "@/server/actions/ai";
+import { generatePostAction, generatePostImageAction } from "@/server/actions/ai";
 
 /** A provider the user has set up, as the form needs it for the "use this one first" choice. */
-export type AiProviderOption = { id: string; label: string; model: string | null };
+export type AiProviderOption = { id: string; label: string; model: string | null; /** Can this provider draw (an image model is known)? */ canDraw?: boolean };
 
-type Mode = "create" | "rewrite";
+type Mode = "create" | "rewrite" | "image";
 
 /**
- * "Write with AI" panel of the post form. It only ever produces DRAFTS: the user picks one ("Kullan") and edits it in the
- * normal text box, nothing is published from here.
+ * "Write with AI" panel of the post form. It only ever produces DRAFTS and media: the user picks one ("Kullan") and edits it
+ * in the normal text box or attaches the image to the post, nothing is published from here.
  */
 export function AiAssistant({
   providers,
   platforms,
   text,
+  mediaCount,
   onUse,
+  onUseImage,
 }: {
   providers: AiProviderOption[];
   platforms: Platform[];
   text: string;
+  /** How many media files the form already holds (the 4-file limit is shared with uploads) */
+  mediaCount: number;
   /** `platform` is set when the text was written for one platform only (per-platform mode): it becomes that platform's own text */
   onUse: (text: string, platform?: Platform) => void;
+  /** Attaches a generated image to the post's shared media list */
+  onUseImage: (url: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<Mode>("create");
@@ -61,9 +70,10 @@ export function AiAssistant({
 
   function run() {
     setError(null);
+    const textMode = mode === "rewrite" ? "rewrite" : "create"; // the image tab never reaches this action
     startTransition(async () => {
       const r = await generatePostAction({
-        mode,
+        mode: textMode,
         brief: brief.trim() || undefined,
         text: mode === "rewrite" ? text : undefined,
         action: mode === "rewrite" ? action : undefined,
@@ -125,11 +135,12 @@ export function AiAssistant({
             </p>
           ) : (
             <>
-              <div role="radiogroup" aria-label="Çalışma biçimi" className="grid grid-cols-2 gap-2">
+              <div role="radiogroup" aria-label="Çalışma biçimi" className="grid grid-cols-3 gap-2">
                 {(
                   [
                     ["create", "Sıfırdan yaz"],
-                    ["rewrite", "Mevcut metni iyileştir"],
+                    ["rewrite", "Metni iyileştir"],
+                    ["image", "Görsel üret"],
                   ] as const
                 ).map(([v, label]) => (
                   <button
@@ -148,6 +159,10 @@ export function AiAssistant({
                 ))}
               </div>
 
+              {mode === "image" ? (
+                <ImagePanel providers={providers} mediaCount={mediaCount} onUseImage={onUseImage} defaultPrompt={brief || text} />
+              ) : (
+                <>
               {mode === "create" ? (
                 <div className="space-y-1.5">
                   <Label htmlFor="ai-brief">Ne hakkında yazalım?</Label>
@@ -354,10 +369,146 @@ export function AiAssistant({
                   )}
                 </div>
               )}
+                </>
+              )}
             </>
           )}
         </div>
       )}
     </section>
+  );
+}
+
+/**
+ * Image generation inside the AI panel. Same rule as the text side: the result is only a suggestion until the person clicks
+ * "Kullan", which attaches the stored media URL to the post. The 4-file media limit is shared with uploads.
+ */
+function ImagePanel({
+  providers,
+  mediaCount,
+  onUseImage,
+  defaultPrompt,
+}: {
+  providers: AiProviderOption[];
+  mediaCount: number;
+  onUseImage: (url: string) => void;
+  defaultPrompt: string;
+}) {
+  const [prompt, setPrompt] = useState(defaultPrompt);
+  const [size, setSize] = useState<ImageSize>("1024x1024");
+  const [providerId, setProviderId] = useState("");
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<{ message: string; noProvider: boolean } | null>(null);
+  const [result, setResult] = useState<ImageResult | null>(null);
+
+  const full = mediaCount >= MAX_MEDIA_FILES;
+  const canRun = !pending && !full && prompt.trim().length > 0;
+
+  async function run() {
+    setPending(true);
+    setError(null);
+    const r = await generatePostImageAction({ prompt: prompt.trim(), size, providerId: providerId || undefined });
+    setPending(false);
+    if (!r.ok) {
+      setResult(null);
+      setError({ message: r.error, noProvider: r.code === "NO_PROVIDER" });
+      return;
+    }
+    setResult(r.image);
+  }
+
+  const drawing = providers.filter((p) => p.canDraw !== false);
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-1.5">
+        <Label htmlFor="ai-image-prompt">Nasıl bir görsel?</Label>
+        <Textarea
+          id="ai-image-prompt"
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          maxLength={MAX_IMAGE_PROMPT_CHARS}
+          rows={3}
+          placeholder="Örn. Lacivert zemin üzerinde turkuaz ışıklı, soyut bir takvim ve üç platform simgesi; minimal, düz illüstrasyon."
+          className="bg-surface-2 resize-y"
+        />
+        <p className="text-muted-foreground text-xs">
+          Görsel, gönderiye eklenen bir dosya olur (yayınlanmaz). Metinle aynıları hedefle: sade, okunaklı, marka renkleri.
+        </p>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="ai-image-size">Oran</Label>
+          <NativeSelect id="ai-image-size" value={size} onChange={(e) => setSize(e.target.value as ImageSize)}>
+            {IMAGE_SIZES.map((s) => (
+              <option key={s} value={s}>
+                {IMAGE_SIZE_LABELS[s]}
+              </option>
+            ))}
+          </NativeSelect>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="ai-image-provider">Sağlayıcı</Label>
+          <NativeSelect id="ai-image-provider" value={providerId} onChange={(e) => setProviderId(e.target.value)}>
+            <option value="">Otomatik (görsel üretebilen ilk sağlayıcı)</option>
+            {drawing.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.label}
+              </option>
+            ))}
+          </NativeSelect>
+        </div>
+      </div>
+
+      {full ? (
+        <p className="text-brand-orange text-xs">
+          Gönderide en fazla {MAX_MEDIA_FILES} medya olabilir. Yeni bir görsel için önce birini kaldır.
+        </p>
+      ) : (
+        <div className="flex flex-wrap items-center gap-3">
+          <Button type="button" disabled={!canRun} onClick={() => void run()} className="bg-brand-gradient text-brand-ink border-0 hover:opacity-90">
+            {pending ? <Loader2 className="animate-spin" /> : <ImagePlus />}
+            {pending ? "Çiziyor…" : "Görsel üret"}
+          </Button>
+          <span className="text-muted-foreground text-xs">Görsel üretimi ücretli olabilir; sağlayıcının kotasından harcar.</span>
+        </div>
+      )}
+
+      {error && (
+        <p role="alert" className="text-destructive text-sm">
+          {error.message}{" "}
+          {error.noProvider && (
+            <Link href="/settings/ai" className="text-brand-mist font-medium hover:underline">
+              Sağlayıcı ekle
+            </Link>
+          )}
+        </p>
+      )}
+
+      {result && (
+        <div className="bg-surface-2 space-y-3 rounded-xl p-3" aria-live="polite">
+          {/* eslint-disable-next-line @next/next/no-img-element -- stored media URL, fixed by the upload pipeline */}
+          <img src={result.url} alt="Üretilen görsel önizlemesi" className="max-h-72 w-full rounded-lg object-contain" />
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              disabled={full}
+              onClick={() => {
+                onUseImage(result.url);
+                toast.success("Görsel gönderiye eklendi");
+              }}
+            >
+              Kullan
+            </Button>
+            <span className="text-muted-foreground text-xs">
+              {result.providerLabel} · {result.model} · {(result.ms / 1000).toFixed(1)} sn
+              {result.tried.some((t) => !t.ok) && ` · ${result.tried.filter((t) => !t.ok).length} deneme başarısız oldu, yedek kullanıldı`}
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

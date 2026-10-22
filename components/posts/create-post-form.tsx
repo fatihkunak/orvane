@@ -208,7 +208,14 @@ export function CreatePostForm({ connected, aiProviders, initial }: { connected:
           />
         </section>
 
-        <AiAssistant providers={aiProviders} platforms={platforms} text={text} onUse={(t, platform) => (platform ? setOverrides((o) => ({ ...o, [platform]: t })) : setText(t))}
+        <AiAssistant
+          providers={aiProviders}
+          platforms={platforms}
+          text={text}
+          mediaCount={media.length}
+          onUse={(t, platform) => (platform ? setOverrides((o) => ({ ...o, [platform]: t })) : setText(t))}
+          onUseImage={(url) => setMedia((all) => (all.length >= MAX_MEDIA_FILES ? all : [...all, { url, kind: mediaKind(url) }]))}
+        
         />
 
         <section className="space-y-2">
