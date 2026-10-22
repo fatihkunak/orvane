@@ -308,5 +308,17 @@
     ],
     "missing": [],
     "noCode": false
+  },
+  "Security": {
+    "category": "Kalite",
+    "paths": [
+      "next.config.ts",
+      "lib/ai/rate-limit.ts",
+      "SECURITY.md",
+      "tests/e2e/public.spec.ts",
+      "playwright.config.ts"
+    ],
+    "missing": [],
+    "noCode": false
   }
 }

@@ -15,11 +15,26 @@ const nextConfig: NextConfig = {
     },
   },
   /**
-   * Baseline security headers. Deliberately no Content-Security-Policy: Next injects inline bootstrap scripts, and a policy
-   * without per-request nonces either breaks the app or is loose enough to be theatre. The rest are free wins:
-   * no MIME sniffing, no framing, no referrer leak to third parties, no device permissions we never ask for.
+   * Baseline security headers. The CSP is REPORT-ONLY on purpose: Next injects inline bootstrap scripts, so an enforcing policy
+   * needs per-request nonces (middleware) before it can ship without breaking the app. Report-only never blocks anything -- it
+   * keeps the intended policy in the repository and shows violations in the browser console, so promoting it later is a switch,
+   * not a rewrite. See docs/wiki/Security.md.
    */
   async headers() {
+    const csp = [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob: https://res.cloudinary.com",
+      "media-src 'self' https://res.cloudinary.com",
+      "font-src 'self' data:",
+      "connect-src 'self'",
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "object-src 'none'",
+    ].join("; ");
+
     return [
       {
         source: "/:path*",
@@ -28,6 +43,7 @@ const nextConfig: NextConfig = {
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
+          { key: "Content-Security-Policy-Report-Only", value: csp },
         ],
       },
     ];

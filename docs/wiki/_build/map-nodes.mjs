@@ -35,6 +35,7 @@ const mapping = {
   Mcp: { paths: ['app/api/mcp/route.ts', 'lib/mcp/server.ts', 'lib/api-tokens.ts', 'lib/post-create.ts', 'app/(dashboard)/settings/mcp/page.tsx', 'components/mcp/token-manager.tsx', 'server/actions/mcp.ts', 'tests/mcp-admin.test.ts'] },
   AdminApi: { paths: ['lib/admin-api.ts', 'lib/admin-users.ts', 'app/api/admin/users/route.ts', 'app/api/admin/users/[id]/route.ts', 'app/api/admin/users/[id]/suspend/route.ts', 'app/api/admin/stats/route.ts', 'app/suspended/page.tsx'] },
   Health: { paths: ['app/api/health/route.ts'] },
+  Security: { paths: ['next.config.ts', 'lib/ai/rate-limit.ts', 'SECURITY.md', 'tests/e2e/public.spec.ts', 'playwright.config.ts'] },
   Auth: { paths: ['auth.config.ts', 'auth.ts', 'proxy.ts', 'app/api/auth/[...nextauth]/route.ts', 'app/login/page.tsx'] },
 };
 

@@ -65,3 +65,11 @@ jobs:
 
       - name: Production build
         run: npm run build
+
+      # Browser smoke tests against the build above: login page, 404, health, security headers.
+      # Only public surfaces -- a session would need a login bypass or the real AUTH_SECRET.
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser tests (public surfaces)
+        run: npm run e2e
