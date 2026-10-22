@@ -10,3 +10,8 @@ Uçtan uca (elle, tarayıcı + Inngest Dev Server): form→olay→yayın→hata 
 GOTCHA: `localhost` oturum çerezi Auth.js tarafından HttpOnly yenilenir, JS ile ezilemez; test için `127.0.0.1` kullan (`next.config.ts` → `allowedDevOrigins`, yoksa sayfa hidrate olmaz).
 - `ai-core.test.ts`: sağlayıcı kaydı bütünlüğü ve tuzaklar, SSRF koruması, istek/yanıt biçimleri, HTTP hata sınıflandırma, yedek zinciri, model yedeği, istem ve JSON ayrıştırma (taklit `fetch`).
 - `ai-service.test.ts`: GERÇEK DB; şifreli anahtar deposu, sıralama, SSRF reddi, üretim hattı (yedeğe geçiş, model yedeği, limit aşımı onarımı, anahtar sızıntısı yok), hız sınırı ve gerçek HTTP loopback sunucusuyla uçtan uca. Hiçbiri gerçek sağlayıcıya gitmez.
+- `ai-image.test.ts`: görsel isteği/ayrıştırma/limitler, URL cevabının reddi (SSRF), sağlayıcı seçimi; GERÇEK DB + yerel HTTP görsel sunucusuyla uçtan uca (baytlar `.uploads`'a yazılır, kota hatasında yedek).
+- `drafts.test.ts`: taslak listesi/formu, kaydetme (planlama, platform düşürme), **ileri tarihli SCHEDULED düzenleme**, vadesi gelmiş gönderinin reddi, **hızlı saat değiştirme** (geçmiş/başkası/taslak/yayınlanmış reddi), platform başına medya.
+- `mcp-admin.test.ts`: MCP araç listesi, `schedule_post`, `publish_now` (onaysız/gizli metin/başkasının/yayınlanmış reddi, tek olay), belirteç deposu, uç nokta yetkisi, yönetim API'si ve askıya alma.
+- `update.test.ts`: GitHub commit ayrıştırma, yerel↔uzak karşılaştırma (yerel commit listede yoksa tarih tahmini), `ORVANE_UPDATE_ENABLED` / `ORVANE_OWNER_EMAIL` kapıları (fail-closed).
+- **CI:** `.github/workflows/ci.yml` her push/PR'da Postgres 16 servisiyle `tsc --noEmit` → `eslint` → `npm test` → `npm run build` çalıştırır; dördü de geçmeden birleştirme yapılmaz.

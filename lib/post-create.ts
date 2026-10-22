@@ -1,7 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
 import { PLATFORMS } from "@/lib/platforms";
-import { createPostSchema, type CreatePostInput } from "@/lib/validation/post";
+import { createPostSchema, scheduleTimeSchema, type CreatePostInput } from "@/lib/validation/post";
 
 export type PostMode = "draft" | "schedule" | "now";
 export type CreatePostResult = { ok: true; id: string; mode: PostMode } | { ok: false; error: string };
@@ -89,4 +89,19 @@ export async function updateDraftForUser(userId: string, postId: string, input: 
     return true;
   });
   return moved ? { ok: true, id: postId, mode: p.data.mode } : { ok: false, error: "Gönderi artık düzenlenemiyor" };
+}
+
+/**
+ * Moves an already scheduled post to another time without touching its text, platforms or media. Only a SCHEDULED post that has
+ * not gone out can move, and the move is one atomic update: a post the publisher has claimed is left alone.
+ */
+export async function reschedulePostForUser(userId: string, postId: string, scheduledAt: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const parsed = scheduleTimeSchema.safeParse(scheduledAt);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Geçersiz tarih" };
+
+  const { count } = await prisma.post.updateMany({
+    where: { id: postId, userId, status: "SCHEDULED", scheduledAt: { gt: new Date() } },
+    data: { scheduledAt: new Date(parsed.data) },
+  });
+  return count === 1 ? { ok: true } : { ok: false, error: "Gönderi bulunamadı ya da artık zamanlanabilir durumda değil" };
 }

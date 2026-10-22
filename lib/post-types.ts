@@ -8,6 +8,8 @@ export type PostItem = {
   scheduledAt: Date;
   status: PostStatus;
   hasMedia: boolean;
+  /** First image URL (shared or one platform's own), used as the list thumbnail */
+  thumb: string | null;
   /** First platform error, shown on failed posts */
   error: string | null;
 };

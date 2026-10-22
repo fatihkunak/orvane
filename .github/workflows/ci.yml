@@ -1,0 +1,67 @@
+name: CI
+
+# Every push and pull request must pass the same four gates we run locally:
+# types, lint, the test suite against a real Postgres, and a production build.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: orvane
+          POSTGRES_PASSWORD: orvane
+          POSTGRES_DB: orvane
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U orvane"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      # Tests run against this database; every test creates and deletes its own user.
+      DATABASE_URL: postgresql://orvane:orvane@localhost:5432/orvane?schema=public
+      DIRECT_URL: postgresql://orvane:orvane@localhost:5432/orvane?schema=public
+      # Dummy values: nothing here talks to Google, the platforms or Inngest.
+      AUTH_SECRET: ci-only-not-a-secret-0000000000000000
+      TOKEN_ENCRYPTION_KEY: BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc=
+      AUTH_URL: http://localhost:3000
+      APP_URL: http://localhost:3000
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # postinstall runs `prisma generate`, which needs no database
+      - run: npm ci
+
+      - run: npx prisma migrate deploy
+
+      - name: Types
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Tests (real Postgres)
+        run: npm test
+
+      - name: Production build
+        run: npm run build

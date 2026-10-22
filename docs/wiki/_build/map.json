@@ -275,6 +275,7 @@
     "category": "Kalite",
     "paths": [
       "vitest.config.mts",
+      ".github/workflows/ci.yml",
       "tests/unit.test.ts",
       "tests/publishers.test.ts",
       "tests/publishing.test.ts",
@@ -282,7 +283,8 @@
       "tests/ai-core.test.ts",
       "tests/ai-service.test.ts",
       "tests/ai-image.test.ts",
-      "tests/mcp-admin.test.ts"
+      "tests/mcp-admin.test.ts",
+      "tests/update.test.ts"
     ],
     "missing": [],
     "noCode": false

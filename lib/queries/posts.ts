@@ -1,6 +1,7 @@
 import "server-only";
 import type { Platform } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
+import { mediaKind } from "@/lib/media";
 import type { PostDTO } from "@/lib/post-types";
 
 /** Scheduled/published/failed posts of a user (drafts have no date, so they are not calendar items). */
@@ -12,15 +13,21 @@ export async function listDatedPosts(userId: string, opts: { take?: number } = {
     take: opts.take ?? 500,
   });
 
-  return posts.map((p) => ({
-    id: p.id,
-    text: p.text,
-    platforms: p.platforms.map((x) => x.platform),
-    scheduledAt: p.scheduledAt!.toISOString(),
-    status: p.status,
-    hasMedia: p.mediaUrls.length > 0 || p.platforms.some((x) => x.mediaUrls.length > 0),
-    error: p.platforms.find((x) => x.error)?.error ?? null,
-  }));
+  return posts.map((p) => {
+    // Thumbnail: the first IMAGE (shared media wins, otherwise a platform's own) -- videos show the icon instead
+    const candidates = [...p.mediaUrls, ...p.platforms.flatMap((x) => x.mediaUrls)];
+    const thumb = candidates.find((u) => mediaKind(u) === "image") ?? null;
+    return {
+      id: p.id,
+      text: p.text,
+      platforms: p.platforms.map((x) => x.platform),
+      scheduledAt: p.scheduledAt!.toISOString(),
+      status: p.status,
+      hasMedia: p.mediaUrls.length > 0 || p.platforms.some((x) => x.mediaUrls.length > 0),
+      thumb,
+      error: p.platforms.find((x) => x.error)?.error ?? null,
+    };
+  });
 }
 
 export async function postCounts(userId: string) {

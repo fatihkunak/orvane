@@ -359,7 +359,7 @@ function SelectedDayList({ day, posts, className }: { day: Date; posts: PostItem
       ) : (
         <ul className="space-y-3">
           {posts.map((p) => (
-            <PostRow key={p.id} post={p} whenLabel={formatTime(p.scheduledAt)} />
+            <PostRow key={p.id} post={p} whenLabel={formatTime(p.scheduledAt)} quickReschedule />
           ))}
         </ul>
       )}

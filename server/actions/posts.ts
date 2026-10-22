@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { inngest, POST_PUBLISH_REQUESTED, publishEventId } from "@/inngest/client";
 import { prisma } from "@/lib/prisma";
-import { createPostForUser, updateDraftForUser, type CreatePostResult } from "@/lib/post-create";
+import { createPostForUser, reschedulePostForUser, updateDraftForUser, type CreatePostResult } from "@/lib/post-create";
 import type { CreatePostInput } from "@/lib/validation/post";
 
 export type ActionResult<T = object> = ({ ok: true } & T) | { ok: false; error: string };
@@ -45,8 +45,18 @@ export async function updateDraftAction(postId: string, input: CreatePostInput):
   return { ok: true, id: saved.id };
 }
 
-/** Deletes a post that has not been published yet. */
-export async function deletePostAction(postId: string): Promise<ActionResult> {
+/** Moves a scheduled post to another time (quick reschedule from the calendar). Text and media are untouched. */
+export async function reschedulePostAction(postId: string, scheduledAt: string): Promise<ActionResult> {
+  const userId = (await auth())?.user?.id;
+  if (!userId) return SESSION_EXPIRED;
+  const r = await reschedulePostForUser(userId, postId, scheduledAt);
+  if (!r.ok) return r;
+  revalidatePath("/calendar");
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+/** Deletes a post that has not been published yet. */export async function deletePostAction(postId: string): Promise<ActionResult> {
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) return { ok: false, error: "Oturum süresi doldu" };

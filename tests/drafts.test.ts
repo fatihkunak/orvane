@@ -1,7 +1,7 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/prisma";
 import { encrypt } from "@/lib/crypto";
-import { createPostForUser, updateDraftForUser } from "@/lib/post-create";
+import { createPostForUser, reschedulePostForUser, updateDraftForUser } from "@/lib/post-create";
 import type { CreatePostInput } from "@/lib/validation/post";
 import { getPostForForm, listDrafts } from "@/lib/queries/posts";
 import { findDuePostIds, loadPublishJob, mediaFor } from "@/lib/publishing";
@@ -156,6 +156,37 @@ describe("saving over a draft", () => {
     await prisma.post.update({ where: { id: a.id }, data: { status: "SCHEDULED" } });
     expect(await updateDraftForUser(userId, a.id, input)).toMatchObject({ ok: false });
     expect((await prisma.post.findUniqueOrThrow({ where: { id: a.id } })).text).toBe("ortak metin"); // untouched
+  });
+});
+
+describe("quick reschedule from the calendar", () => {
+  const future = (hours: number) => new Date(Date.now() + hours * 3600_000).toISOString();
+
+  it("moves a scheduled post, leaving its text alone", async () => {
+    const made = await createPostForUser(userId, { text: "planlı", platforms: ["TWITTER"], mediaUrls: [], mode: "schedule", scheduledAt: future(1) });
+    if (!made.ok) throw new Error("setup");
+    const nextWhen = future(5);
+    expect(await reschedulePostForUser(userId, made.id, nextWhen)).toEqual({ ok: true });
+    const post = await prisma.post.findUniqueOrThrow({ where: { id: made.id } });
+    expect(post.scheduledAt!.toISOString()).toBe(nextWhen);
+    expect(post.text).toBe("planlı");
+  });
+
+  it("refuses a past time, another user's post, a draft and an already published post", async () => {
+    const originalWhen = future(1);
+    const made = await createPostForUser(userId, { text: "x", platforms: ["TWITTER"], mediaUrls: [], mode: "schedule", scheduledAt: originalWhen });
+    if (!made.ok) throw new Error("setup");
+
+    expect(await reschedulePostForUser(userId, made.id, new Date(Date.now() - 3600_000).toISOString())).toMatchObject({ ok: false });
+    expect(await reschedulePostForUser(otherId, made.id, future(2))).toMatchObject({ ok: false });
+    expect((await prisma.post.findUniqueOrThrow({ where: { id: made.id } })).scheduledAt!.toISOString()).toBe(originalWhen);
+
+    const draft = await createPostForUser(userId, { text: "taslak", platforms: ["TWITTER"], mediaUrls: [], mode: "draft" });
+    if (!draft.ok) throw new Error("setup");
+    expect(await reschedulePostForUser(userId, draft.id, future(2))).toMatchObject({ ok: false });
+
+    await prisma.post.update({ where: { id: made.id }, data: { status: "PUBLISHED" } });
+    expect(await reschedulePostForUser(userId, made.id, future(3))).toMatchObject({ ok: false });
   });
 });
 

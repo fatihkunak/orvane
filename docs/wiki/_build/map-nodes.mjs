@@ -28,7 +28,7 @@ const mapping = {
   Accounts: { paths: ['lib/social/app-credentials.ts', 'components/platform/app-keys-form.tsx', 'tests/app-credentials.test.ts', 'lib/social/providers.ts', 'lib/social/oauth-flow.ts', 'lib/social/tokens.ts', 'lib/crypto.ts', 'server/actions/accounts.ts', 'app/(dashboard)/accounts/page.tsx', 'app/api/connect/[provider]/route.ts'] },
   Publishing: { paths: ['lib/publishing.ts', 'lib/social/publishers/shared.ts', 'lib/social/publishers/twitter.ts', 'lib/social/publishers/linkedin.ts', 'lib/social/publishers/threads.ts'] },
   Inngest: { paths: ['inngest/client.ts', 'inngest/functions.ts', 'app/api/inngest/route.ts'] },
-  Tests: { paths: ['vitest.config.mts', 'tests/unit.test.ts', 'tests/publishers.test.ts', 'tests/publishing.test.ts', 'tests/oauth-flow.test.ts', 'tests/ai-core.test.ts', 'tests/ai-service.test.ts', 'tests/ai-image.test.ts', 'tests/mcp-admin.test.ts'] },
+  Tests: { paths: ['vitest.config.mts', '.github/workflows/ci.yml', 'tests/unit.test.ts', 'tests/publishers.test.ts', 'tests/publishing.test.ts', 'tests/oauth-flow.test.ts', 'tests/ai-core.test.ts', 'tests/ai-service.test.ts', 'tests/ai-image.test.ts', 'tests/mcp-admin.test.ts', 'tests/update.test.ts'] },
   AiProviders: { paths: ['lib/ai/providers.ts', 'lib/ai/client.ts', 'lib/ai/errors.ts', 'lib/ai/security.ts', 'lib/ai/failover.ts', 'lib/ai/text.ts'] },
   AiGeneration: { paths: ['components/ai/ai-assistant.tsx', 'lib/ai/prompt.ts', 'lib/ai/service.ts', 'lib/ai/image.ts', 'lib/ai/image-meta.ts', 'lib/ai/image-service.ts', 'lib/ai/rate-limit.ts', 'server/actions/ai.ts', 'tests/ai-image.test.ts'] },
   AiSettings: { paths: ['app/(dashboard)/settings/ai/page.tsx', 'components/ai/provider-manager.tsx', 'lib/ai/store.ts', 'components/ui/native-select.tsx'] },
