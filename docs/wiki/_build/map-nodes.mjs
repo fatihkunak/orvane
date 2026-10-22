@@ -23,7 +23,7 @@ const mapping = {
   Hydration: { paths: ['lib/use-today.ts', 'lib/format.ts'] },
   Analytics: { paths: ['lib/queries/analytics.ts', 'components/analytics/analytics-view.tsx', 'app/(dashboard)/analytics/page.tsx'] },
   Settings: { paths: ['app/(dashboard)/settings/page.tsx'] },
-  Posts: { paths: ['components/posts/create-post-form.tsx', 'components/platform/platform-selector.tsx', 'lib/validation/post.ts', 'lib/char-count.ts', 'server/actions/posts.ts', 'lib/queries/posts.ts', 'lib/post-types.ts'] },
+  Posts: { paths: ['components/posts/create-post-form.tsx', 'components/posts/draft-row.tsx', 'app/(dashboard)/drafts/page.tsx', 'app/(dashboard)/posts/[id]/edit/page.tsx', 'lib/post-create.ts', 'tests/drafts.test.ts', 'components/platform/platform-selector.tsx', 'lib/validation/post.ts', 'lib/char-count.ts', 'server/actions/posts.ts', 'lib/queries/posts.ts', 'lib/post-types.ts'] },
   Media: { paths: ['lib/media.ts', 'app/api/upload/route.ts', 'app/api/media/[name]/route.ts'] },
   Accounts: { paths: ['lib/social/providers.ts', 'lib/social/oauth-flow.ts', 'lib/social/tokens.ts', 'lib/crypto.ts', 'server/actions/accounts.ts', 'app/(dashboard)/accounts/page.tsx', 'app/api/connect/[provider]/route.ts'] },
   Publishing: { paths: ['lib/publishing.ts', 'lib/social/publishers/shared.ts', 'lib/social/publishers/twitter.ts', 'lib/social/publishers/linkedin.ts', 'lib/social/publishers/threads.ts'] },

@@ -7,7 +7,7 @@ import type { NextAuthConfig } from "next-auth";
  */
 
 // Routes that need a signed-in user
-const PROTECTED_PREFIXES = ["/dashboard", "/calendar", "/analytics", "/accounts", "/settings", "/posts"];
+const PROTECTED_PREFIXES = ["/dashboard", "/calendar", "/analytics", "/accounts", "/settings", "/posts", "/drafts"];
 
 export default {
   // Reads AUTH_GOOGLE_ID / AUTH_GOOGLE_SECRET from the environment

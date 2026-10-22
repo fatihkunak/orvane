@@ -130,6 +130,11 @@
     "category": "Gönderi & Medya",
     "paths": [
       "components/posts/create-post-form.tsx",
+      "components/posts/draft-row.tsx",
+      "app/(dashboard)/drafts/page.tsx",
+      "app/(dashboard)/posts/[id]/edit/page.tsx",
+      "lib/post-create.ts",
+      "tests/drafts.test.ts",
       "components/platform/platform-selector.tsx",
       "lib/validation/post.ts",
       "lib/char-count.ts",

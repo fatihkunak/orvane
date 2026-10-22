@@ -10,9 +10,12 @@ import { ReconnectRequiredError, getAccessToken } from "@/lib/social/tokens";
 /** A platform row stuck in PUBLISHING longer than this is assumed to belong to a crashed run. */
 export const STALE_PUBLISHING_MS = 10 * 60_000;
 
-/** `text` is the platform's own text; null means the job's shared text */
-export type PublishTarget = { id: string; platform: Platform; socialAccountId: string; text: string | null };
+/** `text` is the platform's own text; null means the job's shared text. `mediaUrls` empty means the job's shared media */
+export type PublishTarget = { id: string; platform: Platform; socialAccountId: string; text: string | null; mediaUrls: string[] };
 export type PublishJob = { postId: string; text: string; mediaUrls: string[]; targets: PublishTarget[] };
+
+/** The media a platform gets: its own when it has any, otherwise the post's shared media. */
+export const mediaFor = (target: Pick<PublishTarget, "mediaUrls">, shared: readonly string[]): string[] => (target.mediaUrls.length ? target.mediaUrls : [...shared]);
 
 const claimable = (now: Date) => ({
   OR: [
@@ -40,7 +43,7 @@ export async function loadPublishJob(postId: string, now = new Date()): Promise<
       id: true,
       text: true,
       mediaUrls: true,
-      platforms: { where: claimable(now), select: { id: true, platform: true, socialAccountId: true, text: true } },
+      platforms: { where: claimable(now), select: { id: true, platform: true, socialAccountId: true, text: true, mediaUrls: true } },
     },
   });
   if (!post || post.platforms.length === 0) return null;

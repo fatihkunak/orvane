@@ -10,3 +10,9 @@
 - **AI ile yaz:** Metin alanının üstündeki panel taslak üretir ([[AiGeneration]]); "Kullan" metni doldurur, yayın yine kullanıcının onayıyla.
 
 Bkz. [[Calendar]], [[Dashboard]], [[Publishing]], [[AiGeneration]].
+
+## Taslaklar ve platform başına medya (2026-10-22)
+- **Taslaklar sayfası** `/drafts` (`components/posts/draft-row.tsx`, `lib/queries/posts.ts` `listDrafts`): form, AI ve MCP'den gelen TÜM taslaklar burada listelenir (takvim yalnız tarihli gönderileri gösterir, taslakların tarihi yoktur). Menüde "Taslaklar" var (mobil alt barda YOK, ana sayfadaki "N taslak seni bekliyor" kartı oraya götürür). Satırdan silinir ya da açılır.
+- **Taslağı düzenle** `/posts/[id]/edit` → aynı `CreatePostForm` (`initial` prop'u ile dolu). `getDraftForForm` yalnız sahibinin DRAFT'ını döndürür, başkası 404. Kaydet: `updateDraftAction` → `updateDraftForUser` (`lib/post-create.ts`): AYNI gönderi güncellenir (kopya yok), platform satırları seçime uyar, durum `DRAFT`'ta kalır ya da `SCHEDULED` olur; yalnız hâlâ DRAFT ise (atomik `updateMany`). "Taslak olarak kaydet" → `/drafts`, planla/yayınla → `/calendar`.
+- **Platform başına medya:** `PostPlatform.mediaUrls` (boş = gönderinin `mediaUrls`'i). Doğrulama `mediaByPlatform` (seçili olmayan platform reddedilir, her adres beyaz listeden). Yayında `mediaFor(target, job.mediaUrls)` (`lib/publishing.ts`). Formda her platform kartında "X için ayrı medya"; "+ X için ayrı metin ve medya" düğmesi kartı açar; "Genel metne ve medyaya dön" ikisini de temizler. Önizleme platformun kendi medyasını gösterir.
+- **Sınır:** bir gönderinin TEK zamanı var; platformlara farklı saat için ayrı gönderi gerekir.

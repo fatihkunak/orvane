@@ -7,8 +7,8 @@ import { cn } from "@/lib/utils";
 import { NAV_ITEMS, NEW_POST_HREF, isActive } from "./nav-items";
 
 // The design board's bottom bar has 4 tabs with the "+" button in the middle.
-// Analytics lives in the sidebar/topbar flow, so the bar shows the other four.
-const BAR_ITEMS = NAV_ITEMS.filter((i) => i.href !== "/analytics");
+// Analytics and Drafts live in the sidebar/topbar flow (the dashboard links to both), so the bar shows the other four.
+const BAR_ITEMS = NAV_ITEMS.filter((i) => i.href !== "/analytics" && i.href !== "/drafts");
 
 /** Bottom tab bar for screens below lg. */
 export function MobileNav() {

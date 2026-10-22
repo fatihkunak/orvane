@@ -6,6 +6,10 @@ import { PLATFORMS } from "@/lib/platforms";
 
 export const POST_MODES = ["draft", "schedule", "now"] as const;
 
+const mediaList = z
+  .array(z.string().refine(isAllowedMediaUrl, "Geçersiz medya adresi"))
+  .max(MAX_MEDIA_FILES, `En fazla ${MAX_MEDIA_FILES} medya`);
+
 export const createPostSchema = z
   .object({
     /** The text for every platform without its own text in `overrides` (may be empty when all have one) */
@@ -13,14 +17,17 @@ export const createPostSchema = z
     platforms: z.array(z.enum(Platform)).min(1, "En az bir platform seç"),
     /** Text written for one platform only; it replaces `text` there */
     overrides: z.partialRecord(z.enum(Platform), z.string().trim().min(1, "Platform metni boş olamaz")).default({}),
-    mediaUrls: z
-      .array(z.string().refine(isAllowedMediaUrl, "Geçersiz medya adresi"))
-      .max(MAX_MEDIA_FILES, `En fazla ${MAX_MEDIA_FILES} medya`),
+    mediaUrls: mediaList,
+    /** Media for one platform only; it replaces `mediaUrls` there (empty list = use the shared media) */
+    mediaByPlatform: z.partialRecord(z.enum(Platform), mediaList).default({}),
     mode: z.enum(POST_MODES),
     /** ISO string with timezone offset (built in the browser from the local date/time inputs) */
     scheduledAt: z.iso.datetime({ offset: true }).optional(),
   })
   .superRefine((v, ctx) => {
+    for (const p of Object.keys(v.mediaByPlatform) as Platform[]) {
+      if (!v.platforms.includes(p)) ctx.addIssue({ code: "custom", path: ["mediaByPlatform", p], message: `${PLATFORMS[p].label} seçili değil` });
+    }
     for (const p of Object.keys(v.overrides) as Platform[]) {
       if (!v.platforms.includes(p)) ctx.addIssue({ code: "custom", path: ["overrides", p], message: `${PLATFORMS[p].label} seçili değil` });
     }

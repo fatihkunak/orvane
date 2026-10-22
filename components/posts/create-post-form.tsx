@@ -12,7 +12,8 @@ import { Label } from "@/components/ui/label";
 import { AiAssistant, type AiProviderOption } from "@/components/ai/ai-assistant";
 import { PlatformSelector, type ConnectedMap } from "@/components/platform/platform-selector";
 import { PlatformGlyph } from "@/components/platform/platform-icon";
-import { createPostAction } from "@/server/actions/posts";
+import { createPostAction, updateDraftAction } from "@/server/actions/posts";
+import type { DraftForm } from "@/lib/queries/posts";
 import { countChars } from "@/lib/char-count";
 import { ALLOWED_MEDIA_TYPES, MAX_MEDIA_FILES, mediaKind } from "@/lib/media";
 import { PLATFORMS } from "@/lib/platforms";
@@ -25,18 +26,75 @@ const pad = (n: number) => String(n).padStart(2, "0");
 const toDateInput = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const toTimeInput = (d: Date) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 
-export function CreatePostForm({ connected, aiProviders }: { connected: ConnectedMap; aiProviders: AiProviderOption[] }) {
+/** Thumbnails with remove buttons plus the add button, for one media list (shared, or one platform's own). */
+function MediaStrip({
+  items,
+  busy,
+  onRemove,
+  onAdd,
+  onDrop,
+}: {
+  items: Media[];
+  busy: boolean;
+  onRemove: (url: string) => void;
+  onAdd: () => void;
+  onDrop: (files: FileList) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-3">
+      {items.map((m, i) => (
+        <div key={m.url} className="bg-surface-2 relative size-24 overflow-hidden rounded-xl">
+          {m.kind === "image" ? (
+            // eslint-disable-next-line @next/next/no-img-element -- user uploads of arbitrary origin
+            <img src={m.url} alt={`Medya ${i + 1}`} className="size-full object-cover" />
+          ) : (
+            <div className="text-muted-foreground grid size-full place-items-center">
+              <Film className="size-6" />
+            </div>
+          )}
+          <button type="button" aria-label="Medyayı kaldır" onClick={() => onRemove(m.url)} className="absolute top-1 right-1 grid size-6 place-items-center rounded-full bg-black/70 text-white">
+            <X className="size-3.5" />
+          </button>
+        </div>
+      ))}
+      {items.length < MAX_MEDIA_FILES && (
+        <button
+          type="button"
+          onClick={onAdd}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault();
+            onDrop(e.dataTransfer.files);
+          }}
+          className="border-border text-muted-foreground hover:bg-surface-2 grid size-24 place-items-center rounded-xl border border-dashed transition-colors"
+        >
+          {busy ? <Loader2 className="size-5 animate-spin" /> : <ImagePlus className="size-5" />}
+          <span className="sr-only">Medya ekle</span>
+        </button>
+      )}
+    </div>
+  );
+}
+
+const toMedia = (urls: string[]): Media[] => urls.map((url) => ({ url, kind: mediaKind(url) }));
+
+/** The new-post form. With `initial` it continues a draft instead: same fields, saved over that draft. */
+export function CreatePostForm({ connected, aiProviders, initial }: { connected: ConnectedMap; aiProviders: AiProviderOption[]; initial?: DraftForm }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
+  // Which media list the next file pick belongs to: null = shared, a platform = that platform's own media
+  const uploadTarget = useRef<Platform | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const [platforms, setPlatforms] = useState<Platform[]>(
-    () => (Object.keys(connected) as Platform[]).slice(0, 1),
-  );
-  const [text, setText] = useState("");
+  const [platforms, setPlatforms] = useState<Platform[]>(() => initial?.platforms ?? (Object.keys(connected) as Platform[]).slice(0, 1));
+  const [text, setText] = useState(initial?.text ?? "");
   // Text written for one platform only (from per-platform AI drafts); replaces `text` on that platform
-  const [overrides, setOverrides] = useState<Partial<Record<Platform, string>>>({});
-  const [media, setMedia] = useState<Media[]>([]);
+  const [overrides, setOverrides] = useState<Partial<Record<Platform, string>>>(initial?.overrides ?? {});
+  const [media, setMedia] = useState<Media[]>(() => toMedia(initial?.mediaUrls ?? []));
+  // Media for one platform only; empty = that platform uses the shared media
+  const [platformMedia, setPlatformMedia] = useState<Partial<Record<Platform, Media[]>>>(() =>
+    Object.fromEntries(Object.entries(initial?.mediaByPlatform ?? {}).map(([k, v]) => [k, toMedia(v ?? [])])),
+  );
   const [uploading, setUploading] = useState(0);
   const [when, setWhen] = useState<When>("schedule");
   // Default schedule: next full hour, in the browser's timezone
@@ -57,10 +115,12 @@ export function CreatePostForm({ connected, aiProviders }: { connected: Connecte
   const textFor = (p: Platform) => own[p] ?? text;
   const sharedPlatforms = platforms.filter((p) => own[p] === undefined);
   const previewPlatform = previewOf && platforms.includes(previewOf) ? previewOf : platforms[0];
+  const previewMedia = (previewPlatform && platformMedia[previewPlatform]?.length ? platformMedia[previewPlatform] : media) ?? [];
 
-  async function uploadFiles(files: FileList | File[]) {
+  async function uploadFiles(files: FileList | File[], target: Platform | null) {
     const list = Array.from(files);
-    const room = MAX_MEDIA_FILES - media.length;
+    const current = target ? (platformMedia[target] ?? []) : media;
+    const room = MAX_MEDIA_FILES - current.length;
     if (list.length > room) toast.error(`En fazla ${MAX_MEDIA_FILES} medya ekleyebilirsin`);
 
     for (const file of list.slice(0, Math.max(room, 0))) {
@@ -75,7 +135,9 @@ export function CreatePostForm({ connected, aiProviders }: { connected: Connecte
         const res = await fetch("/api/upload", { method: "POST", body });
         const json = (await res.json()) as { url?: string; error?: string };
         if (!res.ok || !json.url) throw new Error(json.error ?? "Yükleme başarısız");
-        setMedia((m) => [...m, { url: json.url!, kind: mediaKind(json.url!) }]);
+        const added: Media = { url: json.url, kind: mediaKind(json.url) };
+        if (target) setPlatformMedia((m) => ({ ...m, [target]: [...(m[target] ?? []), added] }));
+        else setMedia((m) => [...m, added]);
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Yükleme başarısız");
       } finally {
@@ -83,6 +145,16 @@ export function CreatePostForm({ connected, aiProviders }: { connected: Connecte
       }
     }
   }
+
+  function pickFiles(target: Platform | null) {
+    uploadTarget.current = target;
+    fileRef.current?.click();
+  }
+
+  // A platform's own media only counts while it is still selected
+  const ownMedia = Object.fromEntries(platforms.flatMap((p) => ((platformMedia[p]?.length ?? 0) > 0 ? [[p, platformMedia[p]!.map((m) => m.url)]] : []))) as Partial<
+    Record<Platform, string[]>
+  >;
 
   function submit(mode: "draft" | "schedule" | "now") {
     startTransition(async () => {
@@ -95,13 +167,14 @@ export function CreatePostForm({ connected, aiProviders }: { connected: Connecte
         }
         scheduledAt = local.toISOString(); // converts the browser's local time to UTC
       }
-      const res = await createPostAction({ text, platforms, overrides: own, mediaUrls: media.map((m) => m.url), mode, scheduledAt });
+      const payload = { text, platforms, overrides: own, mediaUrls: media.map((m) => m.url), mediaByPlatform: ownMedia, mode, scheduledAt };
+      const res = initial ? await updateDraftAction(initial.id, payload) : await createPostAction(payload);
       if (!res.ok) {
         toast.error(res.error);
         return;
       }
       toast.success(mode === "draft" ? "Taslak kaydedildi" : mode === "now" ? "Yayın kuyruğa alındı" : "Gönderi planlandı");
-      router.push("/calendar");
+      router.push(mode === "draft" ? "/drafts" : "/calendar");
     });
   }
 
@@ -166,6 +239,23 @@ export function CreatePostForm({ connected, aiProviders }: { connected: Connecte
           )}
         </section>
 
+        {platforms.length > 1 && platforms.some((p) => overrides[p] === undefined) && (
+          <div className="flex flex-wrap gap-2">
+            {platforms
+              .filter((p) => overrides[p] === undefined)
+              .map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setOverrides((o) => ({ ...o, [p]: text }))}
+                  className="text-muted-foreground hover:text-foreground hover:bg-surface-2 border-border inline-flex items-center gap-1.5 rounded-full border border-dashed px-3 py-1 text-xs transition-colors"
+                >
+                  <PlatformGlyph platform={p} className="size-3" />+ {PLATFORMS[p].label} için ayrı metin ve medya
+                </button>
+              ))}
+          </div>
+        )}
+
         {platforms
           .filter((p) => overrides[p] !== undefined)
           .map((p) => {
@@ -181,16 +271,21 @@ export function CreatePostForm({ connected, aiProviders }: { connected: Connecte
                   </Label>
                   <button
                     type="button"
-                    onClick={() =>
+                    onClick={() => {
                       setOverrides((o) => {
                         const rest = { ...o };
                         delete rest[p];
                         return rest;
-                      })
-                    }
+                      });
+                      setPlatformMedia((m) => {
+                        const rest = { ...m };
+                        delete rest[p];
+                        return rest;
+                      });
+                    }}
                     className="text-muted-foreground hover:text-foreground text-xs underline-offset-2 hover:underline"
                   >
-                    Genel metne dön
+                    Genel metne ve medyaya dön
                   </button>
                 </div>
                 <Textarea
@@ -204,61 +299,43 @@ export function CreatePostForm({ connected, aiProviders }: { connected: Connecte
                   {n}/{limit}
                   {n > limit && ` · ${n - limit} fazla`}
                 </p>
+                <div className="space-y-1.5 pt-1">
+                  <p className="text-muted-foreground text-xs font-medium">{PLATFORMS[p].label} için ayrı medya (boşsa genel medya kullanılır)</p>
+                  <MediaStrip
+                    items={platformMedia[p] ?? []}
+                    busy={uploading > 0}
+                    onRemove={(url) => setPlatformMedia((m) => ({ ...m, [p]: (m[p] ?? []).filter((x) => x.url !== url) }))}
+                    onAdd={() => pickFiles(p)}
+                    onDrop={(files) => void uploadFiles(files, p)}
+                  />
+                </div>
               </section>
             );
           })}
 
         <section className="space-y-2">
           <Label>Medya</Label>
-          <div className="flex flex-wrap gap-3">
-            {media.map((m, i) => (
-              <div key={m.url} className="bg-surface-2 relative size-24 overflow-hidden rounded-xl">
-                {m.kind === "image" ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- user uploads of arbitrary origin
-                  <img src={m.url} alt={`Medya ${i + 1}`} className="size-full object-cover" />
-                ) : (
-                  <div className="text-muted-foreground grid size-full place-items-center">
-                    <Film className="size-6" />
-                  </div>
-                )}
-                <button
-                  type="button"
-                  aria-label="Medyayı kaldır"
-                  onClick={() => setMedia((all) => all.filter((x) => x.url !== m.url))}
-                  className="absolute top-1 right-1 grid size-6 place-items-center rounded-full bg-black/70 text-white"
-                >
-                  <X className="size-3.5" />
-                </button>
-              </div>
-            ))}
-            {media.length + uploading < MAX_MEDIA_FILES && (
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  void uploadFiles(e.dataTransfer.files);
-                }}
-                className="border-border text-muted-foreground hover:bg-surface-2 grid size-24 place-items-center rounded-xl border border-dashed transition-colors"
-              >
-                {uploading > 0 ? <Loader2 className="size-5 animate-spin" /> : <ImagePlus className="size-5" />}
-                <span className="sr-only">Medya ekle</span>
-              </button>
-            )}
-            <input
-              ref={fileRef}
-              type="file"
-              hidden
-              multiple
-              accept={Object.keys(ALLOWED_MEDIA_TYPES).join(",")}
-              onChange={(e) => {
-                if (e.target.files) void uploadFiles(e.target.files);
-                e.target.value = ""; // allow picking the same file again
-              }}
-            />
-          </div>
-          <p className="text-muted-foreground text-xs">JPG, PNG, GIF veya MP4 · en fazla {MAX_MEDIA_FILES} dosya</p>
+          <MediaStrip
+            items={media}
+            busy={uploading > 0}
+            onRemove={(url) => setMedia((all) => all.filter((x) => x.url !== url))}
+            onAdd={() => pickFiles(null)}
+            onDrop={(files) => void uploadFiles(files, null)}
+          />
+          <input
+            ref={fileRef}
+            type="file"
+            hidden
+            multiple
+            accept={Object.keys(ALLOWED_MEDIA_TYPES).join(",")}
+            onChange={(e) => {
+              if (e.target.files) void uploadFiles(e.target.files, uploadTarget.current);
+              e.target.value = ""; // allow picking the same file again
+            }}
+          />
+          <p className="text-muted-foreground text-xs">
+            JPG, PNG, GIF veya MP4 · en fazla {MAX_MEDIA_FILES} dosya{platforms.length > 1 ? ". Bir platforma farklı görsel koymak için yukarıdaki “ayrı metin ve medya” düğmesini kullan." : ""}
+          </p>
         </section>
 
         <section className="space-y-3">
@@ -330,16 +407,16 @@ export function CreatePostForm({ connected, aiProviders }: { connected: Connecte
           <p className={cn("text-sm leading-relaxed break-words whitespace-pre-wrap", !(previewPlatform && textFor(previewPlatform)) && "text-muted-foreground")}>
             {previewPlatform ? textFor(previewPlatform) || "Metnin burada görünecek" : "Önce bir platform seç"}
           </p>
-          {media[0] &&
-            (media[0].kind === "image" ? (
+          {previewMedia[0] &&
+            (previewMedia[0].kind === "image" ? (
               // eslint-disable-next-line @next/next/no-img-element -- user uploads of arbitrary origin
-              <img src={media[0].url} alt="" className="max-h-64 w-full rounded-xl object-cover" />
+              <img src={previewMedia[0].url} alt="" className="max-h-64 w-full rounded-xl object-cover" />
             ) : (
               <div className="bg-surface-2 text-muted-foreground grid h-40 place-items-center rounded-xl">
                 <Film className="size-8" />
               </div>
             ))}
-          {media.length > 1 && <p className="text-muted-foreground text-xs">+{media.length - 1} medya daha</p>}
+          {previewMedia.length > 1 && <p className="text-muted-foreground text-xs">+{previewMedia.length - 1} medya daha</p>}
         </div>
       </aside>
     </div>

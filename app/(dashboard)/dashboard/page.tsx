@@ -47,6 +47,12 @@ export default async function DashboardPage() {
         </Link>
       )}
 
+      {counts.drafts > 0 && (
+        <Link href="/drafts" className="card-surface border-brand-teal/40 block p-3 text-sm">
+          {counts.drafts} taslak seni bekliyor. Aç, görsel ekle, zamanla →
+        </Link>
+      )}
+
       {/* Desktop has this button in the sidebar */}
       <Link
         href={NEW_POST_HREF}
