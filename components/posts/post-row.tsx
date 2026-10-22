@@ -1,8 +1,9 @@
 "use client";
 
 import { useTransition } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
-import { ImageIcon, Trash2 } from "lucide-react";
+import { ImageIcon, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { STATUS_META } from "@/lib/format";
 import type { PostItem } from "@/lib/post-types";
@@ -14,6 +15,8 @@ export function PostRow({ post, whenLabel }: { post: PostItem; whenLabel: string
   const status = STATUS_META[post.status];
   const [pending, startTransition] = useTransition();
   const deletable = post.status !== "PUBLISHED";
+  // Anything not sent yet can be opened in the form (a scheduled post can be rewritten or unscheduled there)
+  const editable = post.status !== "PUBLISHED";
 
   function remove() {
     startTransition(async () => {
@@ -52,6 +55,17 @@ export function PostRow({ post, whenLabel }: { post: PostItem; whenLabel: string
           <p className="text-destructive line-clamp-2 text-xs">{post.error}</p>
         )}
       </div>
+
+      {editable && (
+        <Link
+          href={`/posts/${post.id}/edit`}
+          aria-label="Gönderiyi düzenle"
+          title="Düzenle"
+          className="text-muted-foreground hover:text-foreground grid size-8 shrink-0 place-items-center rounded-lg transition-colors"
+        >
+          <Pencil className="size-4" />
+        </Link>
+      )}
 
       {deletable && (
         <button

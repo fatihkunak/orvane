@@ -60,22 +60,22 @@ export async function createPostForUser(userId: string, input: CreatePostInput):
 }
 
 /**
- * Saves the form over an existing DRAFT (the person opened it from "Taslaklar") and, depending on the mode, keeps it a draft,
- * schedules it or queues it for publishing. Only the owner's DRAFT can be changed: anything already scheduled or published is
- * left alone.
+ * Saves the form over an existing post and, depending on the mode, keeps it a draft, schedules it or queues it for publishing.
+ * A DRAFT and a SCHEDULED post that is still in the future may be changed; anything already sent (or being sent right now, i.e.
+ * a scheduled post whose time has come) is left alone.
  */
 export async function updateDraftForUser(userId: string, postId: string, input: CreatePostInput): Promise<CreatePostResult> {
-  const existing = await prisma.post.findFirst({ where: { id: postId, userId }, select: { status: true } });
-  if (!existing) return { ok: false, error: "Taslak bulunamadı" };
-  if (existing.status !== "DRAFT") return { ok: false, error: "Yalnızca taslaklar bu ekrandan değiştirilebilir" };
+  const editable = { id: postId, userId, OR: [{ status: "DRAFT" as const }, { status: "SCHEDULED" as const, scheduledAt: { gt: new Date() } }] };
+  const existing = await prisma.post.findFirst({ where: editable, select: { status: true } });
+  if (!existing) return { ok: false, error: "Gönderi bulunamadı ya da artık düzenlenemiyor" };
 
   const p = await prepare(userId, input);
   if (!p.ok) return p;
 
   const wanted = p.data.platforms;
-  // Atomic: the row set follows the selection, and the status only moves if the post is STILL a draft
+  // Atomic: the row set follows the selection, and the status only moves if the post is STILL editable
   const moved = await prisma.$transaction(async (tx) => {
-    const { count } = await tx.post.updateMany({ where: { id: postId, userId, status: "DRAFT" }, data: p.postFields });
+    const { count } = await tx.post.updateMany({ where: editable, data: p.postFields });
     if (count !== 1) return false;
     await tx.postPlatform.deleteMany({ where: { postId, platform: { notIn: wanted } } });
     for (const platform of wanted) {
@@ -88,5 +88,5 @@ export async function updateDraftForUser(userId: string, postId: string, input: 
     }
     return true;
   });
-  return moved ? { ok: true, id: postId, mode: p.data.mode } : { ok: false, error: "Taslak artık değiştirilemiyor" };
+  return moved ? { ok: true, id: postId, mode: p.data.mode } : { ok: false, error: "Gönderi artık düzenlenemiyor" };
 }

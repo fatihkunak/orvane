@@ -66,7 +66,8 @@
       "components/layout/nav-items.ts",
       "components/layout/sidebar.tsx",
       "components/layout/mobile-nav.tsx",
-      "components/layout/topbar.tsx"
+      "components/layout/topbar.tsx",
+      "lib/queries/notifications.ts"
     ],
     "missing": [],
     "noCode": false
@@ -121,7 +122,13 @@
   "Settings": {
     "category": "Sayfalar",
     "paths": [
-      "app/(dashboard)/settings/page.tsx"
+      "app/(dashboard)/settings/page.tsx",
+      "lib/update.ts",
+      "server/actions/update.ts",
+      "components/settings/version-card.tsx",
+      "deploy/update.cmd",
+      "deploy/start-app.cmd",
+      "tests/update.test.ts"
     ],
     "missing": [],
     "noCode": false

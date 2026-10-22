@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { encrypt } from "@/lib/crypto";
 import { createPostForUser, updateDraftForUser } from "@/lib/post-create";
 import type { CreatePostInput } from "@/lib/validation/post";
-import { getDraftForForm, listDrafts } from "@/lib/queries/posts";
+import { getPostForForm, listDrafts } from "@/lib/queries/posts";
 import { findDuePostIds, loadPublishJob, mediaFor } from "@/lib/publishing";
 
 /** Integration tests against the local Postgres: every row hangs off throw-away users, cleanup is a cascading delete. */
@@ -54,21 +54,30 @@ describe("drafts list and form data", () => {
     ]);
   });
 
-  it("gives the form what it needs and nothing for other users' or non-draft posts", async () => {
+  it("gives the form what it needs, and opens a scheduled post that has not gone out", async () => {
     const a = await draft({ overrides: { TWITTER: "kısa X" }, mediaByPlatform: { LINKEDIN: [IMG_LI] } });
     if (!a.ok) throw new Error("setup");
-    const f = await getDraftForForm(userId, a.id);
-    expect(f).toMatchObject({ id: a.id, text: "ortak metin", overrides: { TWITTER: "kısa X" }, mediaByPlatform: { LINKEDIN: [IMG_LI] } });
+    const f = await getPostForForm(userId, a.id);
+    expect(f).toMatchObject({ id: a.id, status: "DRAFT", text: "ortak metin", overrides: { TWITTER: "kısa X" }, mediaByPlatform: { LINKEDIN: [IMG_LI] } });
     expect(f!.platforms.sort()).toEqual(["LINKEDIN", "TWITTER"]);
-    expect(await getDraftForForm(otherId, a.id)).toBeNull();
+    expect(await getPostForForm(otherId, a.id)).toBeNull();
+
+    // Scheduled in the future: the calendar's edit link must work
+    await prisma.post.update({ where: { id: a.id }, data: { status: "SCHEDULED", scheduledAt: new Date(Date.now() + 3600_000) } });
+    expect(await getPostForForm(userId, a.id)).toMatchObject({ id: a.id, status: "SCHEDULED" });
+
+    // Due right now: the publisher may be claiming it, so the form stays closed
+    await prisma.post.update({ where: { id: a.id }, data: { scheduledAt: new Date(Date.now() - 60_000) } });
+    expect(await getPostForForm(userId, a.id)).toBeNull();
+
     await prisma.post.update({ where: { id: a.id }, data: { status: "PUBLISHED" } });
-    expect(await getDraftForForm(userId, a.id)).toBeNull();
+    expect(await getPostForForm(userId, a.id)).toBeNull();
   });
 
   it("does not present a stand-in text as shared text when every platform has its own", async () => {
     const a = await createPostForUser(userId, { text: "", platforms: ["TWITTER", "LINKEDIN"], overrides: { TWITTER: "x metni", LINKEDIN: "li metni" }, mediaUrls: [], mode: "draft" });
     if (!a.ok) throw new Error("setup");
-    expect((await getDraftForForm(userId, a.id))!.text).toBe("");
+    expect((await getPostForForm(userId, a.id))!.text).toBe("");
   });
 });
 
@@ -97,6 +106,27 @@ describe("saving over a draft", () => {
       ["TWITTER", "kısa", [IMG_X]],
     ]);
     expect(await prisma.post.count({ where: { userId } })).toBe(1); // no duplicate post
+  });
+
+  it("edits a scheduled post that has not gone out, and refuses one that is due", async () => {
+    const a = await draft();
+    if (!a.ok) throw new Error("setup");
+    await prisma.post.update({ where: { id: a.id }, data: { status: "SCHEDULED", scheduledAt: new Date(Date.now() + 3600_000) } });
+
+    const r = await updateDraftForUser(userId, a.id, {
+      text: "düzenlenmiş",
+      platforms: ["TWITTER"],
+      mediaUrls: [],
+      mode: "schedule",
+      scheduledAt: new Date(Date.now() + 7200_000).toISOString(),
+    });
+    expect(r).toMatchObject({ ok: true, mode: "schedule" });
+    expect((await prisma.post.findUniqueOrThrow({ where: { id: a.id } })).text).toBe("düzenlenmiş");
+
+    // Its time has come: the publisher may be sending it right now, so the save must not touch it
+    await prisma.post.update({ where: { id: a.id }, data: { scheduledAt: new Date(Date.now() - 60_000) } });
+    expect(await updateDraftForUser(userId, a.id, { text: "geç kaldı", platforms: ["TWITTER"], mediaUrls: [], mode: "draft" })).toMatchObject({ ok: false });
+    expect((await prisma.post.findUniqueOrThrow({ where: { id: a.id } })).text).toBe("düzenlenmiş");
   });
 
   it("drops a platform that is no longer selected and can stay a draft", async () => {

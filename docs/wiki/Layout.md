@@ -5,7 +5,7 @@
 - `components/layout/nav-items.ts` — TEK nav kaynağı (Ana Sayfa, Takvim, Taslaklar, Analitik, Hesaplar, Ayarlar) + `NEW_POST_HREF=/posts/new`, `titleForPath`, `isActive`.
 - `sidebar.tsx` — `lg+`: logo, "Yeni İçerik Oluştur" (gradient), menü. Aktif öğe `aria-current`.
 - `mobile-nav.tsx` — `< lg` alt bar: Ana Sayfa, Takvim, ortada yuvarlak +, Hesaplar, Ayarlar. **Analitik ve Taslaklar bar'da YOK** (tasarım tahtasındaki 4 sekme) → mobilde Dashboard'dan link verilmeli (Adım 4).
-- `topbar.tsx` — `/dashboard`'da "Merhaba, {ad}", diğerlerinde sayfa başlığı; bildirim, çıkış (server action prop), avatar.
+- `topbar.tsx` — `/dashboard`'da "Merhaba, {ad}", diğerlerinde sayfa başlığı; **bildirim zili** (başarısız yayınlar + önümüzdeki 24 saatte çıkacak gönderiler; kırmızı nokta yalnız başarısız yayında) ve **profil menüsü** (ad/e-posta, Profil ve ayarlar, Yapay zekâ, MCP, Çıkış). Bildirim verisi `lib/queries/notifications.ts`'ten layout'ta hesaplanır (okundu/okunmadı tablosu yok: her satır eyleme dönük).
 - `placeholder.tsx` — Adım 4-6'da doldurulacak sayfaların geçici gövdesi.
 - Rotalar: `/dashboard /calendar /analytics /accounts /settings /posts/new /drafts` (hepsi `auth.config.ts` PROTECTED_PREFIXES'te, `/posts` dahil).
 

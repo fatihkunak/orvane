@@ -2,7 +2,9 @@ import Link from "next/link";
 import { CheckCircle2, ChevronRight, CircleAlert, Plug, Sparkles } from "lucide-react";
 import { auth } from "@/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { VersionCard } from "@/components/settings/version-card";
 import { PROVIDERS, credentials } from "@/lib/social/providers";
+import { isUpdateOwner, updateEnabled } from "@/lib/update";
 
 export const metadata = { title: "Ayarlar" };
 
@@ -19,6 +21,11 @@ function checklist() {
     { label: "Giriş (Google)", hint: "AUTH_GOOGLE_ID, AUTH_GOOGLE_SECRET", ok: !!(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET) },
     { label: "Medya depolama (Cloudinary)", hint: "CLOUDINARY_URL; yoksa yerel dosya kullanılır, Threads çalışmaz", ok: !!process.env.CLOUDINARY_URL },
     { label: "Zamanlanmış yayın (Inngest)", hint: "INNGEST_EVENT_KEY, INNGEST_SIGNING_KEY (yerelde Inngest Dev Server yeter)", ok: !!(process.env.INNGEST_EVENT_KEY && process.env.INNGEST_SIGNING_KEY) },
+    {
+      label: "Tek tıkla güncelleme",
+      hint: "ORVANE_UPDATE_ENABLED=1 ve ORVANE_OWNER_EMAIL=<senin e-postan> (yalnız o hesap görür)",
+      ok: updateEnabled(),
+    },
   );
   return items;
 }
@@ -63,6 +70,9 @@ export default async function SettingsPage() {
         </span>
         <ChevronRight className="text-muted-foreground size-4" aria-hidden />
       </Link>
+
+      {/* Owner-only: runs deploy/update.cmd (pull, install, migrate, build, restart) */}
+      {updateEnabled() && isUpdateOwner(user.email) && <VersionCard />}
 
       <section aria-labelledby="setup-title" className="card-surface space-y-3 p-4">
         <h2 id="setup-title" className="text-base font-semibold">

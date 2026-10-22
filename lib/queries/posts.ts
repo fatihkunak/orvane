@@ -61,7 +61,7 @@ export async function listDrafts(userId: string): Promise<DraftDTO[]> {
   }));
 }
 
-/** What the post form needs to continue a draft. Null when it is not the user's or no longer a draft. */
+/** What the post form needs to continue a draft. Null when it is not the user's or no longer editable. */
 export interface DraftForm {
   id: string;
   text: string;
@@ -69,11 +69,17 @@ export interface DraftForm {
   overrides: Partial<Record<Platform, string>>;
   mediaUrls: string[];
   mediaByPlatform: Partial<Record<Platform, string[]>>;
+  /** DRAFT = plain draft; SCHEDULED = still in the future, so it can be changed or unscheduled */
+  status: "DRAFT" | "SCHEDULED";
 }
 
-export async function getDraftForForm(userId: string, id: string): Promise<DraftForm | null> {
+/**
+ * The form can open a draft or a scheduled post that has NOT gone out yet. A post whose time has come (or one the publisher is
+ * already claiming) is excluded: editing it would race with sending it. Published/failed posts are not editable at all.
+ */
+export async function getPostForForm(userId: string, id: string): Promise<DraftForm | null> {
   const p = await prisma.post.findFirst({
-    where: { id, userId, status: "DRAFT" },
+    where: { id, userId, OR: [{ status: "DRAFT" }, { status: "SCHEDULED", scheduledAt: { gt: new Date() } }] },
     include: { platforms: { select: { platform: true, text: true, mediaUrls: true } } },
   });
   if (!p) return null;
@@ -85,5 +91,13 @@ export async function getDraftForForm(userId: string, id: string): Promise<Draft
   }
   // When every platform has its own text the post's text is only a stand-in for lists: do not show it as shared text
   const allOwn = p.platforms.length > 0 && p.platforms.every((x) => !!x.text);
-  return { id: p.id, text: allOwn ? "" : p.text, platforms: p.platforms.map((x) => x.platform), overrides, mediaUrls: p.mediaUrls, mediaByPlatform };
+  return {
+    id: p.id,
+    text: allOwn ? "" : p.text,
+    platforms: p.platforms.map((x) => x.platform),
+    overrides,
+    mediaUrls: p.mediaUrls,
+    mediaByPlatform,
+    status: p.status === "SCHEDULED" ? "SCHEDULED" : "DRAFT",
+  };
 }
