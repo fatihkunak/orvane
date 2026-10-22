@@ -130,6 +130,8 @@
       "server/actions/account.ts",
       "components/settings/delete-account.tsx",
       "deploy/update.cmd",
+      "deploy/update.sh",
+      "deploy/backup.mjs",
       "deploy/start-app.cmd",
       "tests/update.test.ts",
       "tests/account-deletion.test.ts"
@@ -162,9 +164,11 @@
       "lib/media.ts",
       "lib/media-store.ts",
       "lib/media-cleanup.ts",
+      "lib/cloudinary.ts",
       "app/api/upload/route.ts",
       "app/api/media/[name]/route.ts",
-      "tests/media-cleanup.test.ts"
+      "tests/media-cleanup.test.ts",
+      "tests/cloudinary.test.ts"
     ],
     "missing": [],
     "noCode": false

@@ -31,6 +31,13 @@ Bu dosya [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) biçimini izle
 - Kullanıcı kaynaklı AI adresleri SSRF denetiminden geçer; yerel adresler yalnız `ALLOW_PRIVATE_LLM_URLS=1` ile.
 - Yönetim API'si `ORVANE_ADMIN_TOKEN` (≥32 karakter, sabit zamanlı karşılaştırma) olmadan kapalı.
 - `shadcn` geliştirme bağımlılığına taşındı: üretim ağacında yaması olmayan `braces` uyarısı kalmadı.
+- Silinen gönderinin/hesabın medyası temizlenir: yerel dosyalar yalnız referans kalmadıysa silinir, Cloudinary nesneleri imzalı Admin API ile kaldırılır (yabancı bulut reddedilir).
+- Güncelleme öncesi otomatik **veritabanı yedeği** (`pg_dump`, gerekirse Docker konteyneri üzerinden), son 5 dump saklanır.
+
+### Operasyon
+
+- `GET /api/health`: süreç + veritabanı hazırlığı (yeniden başlatma sonrası güncelleme kartı bunu bekler).
+- Tek tıkla güncelleme Windows ve Linux/macOS'ta (`deploy/update.cmd` / `deploy/update.sh`).
 
 ### Belgeler
 

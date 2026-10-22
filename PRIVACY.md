@@ -41,7 +41,7 @@ Veriler, siz silene kadar saklanır. Bir gönderiyi silmek satırını siler; he
 
 - Kullanıcı kaydı, bağlı platform hesapları ve token'lar, gönderiler, medya kayıtları, yapay zekâ sağlayıcı ayarları ve MCP belirteçleri **silinir** (veritabanında `ON DELETE CASCADE`).
 - Sunucudaki yerel medya dosyalarınız (`.uploads/`) diskten kaldırılır.
-- **Cloudinary** kullanılıyorsa dosyalar orada kalır: uygulama Cloudinary'den silme yetkisi kullanmaz. Gerekirse Cloudinary panelinizden silin.
+- **Cloudinary** yapılandırıldıysa, yalnızca sizin gönderilerinizin kullandığı görseller **silinmeye çalışılır** (imzalı Admin API `destroy`). Cloudinary anahtarınıza silme yetkisi verilmemişse ya da istek başarısız olursa dosya orada kalır; o durumda Cloudinary panelinizden silin.
 - Platformlarda **yayınlanmış** gönderiler silinmez — onları ilgili platformdan silmelisiniz.
 - İşlem geri alınamaz. Yeniden kullanmak istersen aynı Google hesabıyla yeniden giriş yapıp yeni bir hesap oluşturursun (eski veriler geri gelmez).
 

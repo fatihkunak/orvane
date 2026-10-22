@@ -132,22 +132,28 @@ export async function checkForUpdate(env: NodeJS.ProcessEnv = process.env): Prom
 
 export const UPDATE_LOG = path.join("deploy", "logs", "update.log");
 
+/** How the update script is started for a platform. Kept pure so both branches can be tested on either OS. */
+export function updateInvocation(platform: NodeJS.Platform, script: string, repo: string): { command: string; args: string[] } {
+  return platform === "win32" ? { command: "cmd.exe", args: ["/c", script, repo] } : { command: "bash", args: [script, repo] };
+}
+
 /**
  * Starts the update script in its own process, from a temporary copy: the script rewrites the repository (git pull) while it
  * runs, so it must not be the file being read from disk. Returns as soon as the process is spawned -- the HTTP request that
  * triggered it must not be killed together with the server.
+ *
+ * Windows uses deploy/update.cmd (it knows the port/PID of the app); Linux/macOS use deploy/update.sh and whatever supervisor
+ * owns the app (systemd unit "orvane" or a pm2 app named "orvane"), or leave the restart to the person.
  */
-export async function startUpdate(env: NodeJS.ProcessEnv = process.env): Promise<{ logPath: string }> {
-  if (process.platform !== "win32") {
-    throw new Error("Otomatik güncelleme yalnızca Windows kurulumunda (deploy/update.cmd) destekleniyor. Elle: git pull && npm ci && npx prisma migrate deploy && npm run build");
-  }
+export async function startUpdate(env: NodeJS.ProcessEnv = process.env, platform: NodeJS.Platform = process.platform): Promise<{ logPath: string }> {
   const repo = process.cwd();
-  const script = path.join(repo, "deploy", "update.cmd");
+  const source = path.join(repo, "deploy", platform === "win32" ? "update.cmd" : "update.sh");
   const dir = await mkdtemp(path.join(tmpdir(), "orvane-update-"));
-  const copy = path.join(dir, "update.cmd");
-  await copyFile(script, copy);
+  const copy = path.join(dir, path.basename(source));
+  await copyFile(source, copy);
 
-  const child = spawn("cmd.exe", ["/c", copy, repo], { detached: true, stdio: "ignore", windowsHide: true, env });
+  const { command, args } = updateInvocation(platform, copy, repo);
+  const child = spawn(command, args, { detached: true, stdio: "ignore", windowsHide: platform === "win32", env });
   child.unref();
   return { logPath: path.join(repo, UPDATE_LOG) };
 }

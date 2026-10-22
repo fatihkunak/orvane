@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compareCommits, isUpdateOwner, parseGithubCommits, updateEnabled, updateRepo } from "@/lib/update";
+import { compareCommits, isUpdateOwner, parseGithubCommits, updateEnabled, updateInvocation, updateRepo } from "@/lib/update";
 
 /** Pure parts of the self-update layer. Nothing here runs git, hits GitHub or starts the update script. */
 
@@ -63,5 +63,17 @@ describe("who may update", () => {
   it("tracks the public repo by default and allows an override", () => {
     expect(updateRepo({} as unknown as NodeJS.ProcessEnv)).toBe("fatihkunak/orvane");
     expect(updateRepo({ ORVANE_REPO: "me/fork" } as unknown as NodeJS.ProcessEnv)).toBe("me/fork");
+  });
+
+  it("starts the right script for the platform", () => {
+    expect(updateInvocation("win32", "C:\\tmp\\update.cmd", "C:\\repo")).toEqual({
+      command: "cmd.exe",
+      args: ["/c", "C:\\tmp\\update.cmd", "C:\\repo"],
+    });
+    expect(updateInvocation("linux", "/tmp/update.sh", "/srv/orvane")).toEqual({
+      command: "bash",
+      args: ["/tmp/update.sh", "/srv/orvane"],
+    });
+    expect(updateInvocation("darwin", "/tmp/update.sh", "/Users/x/orvane").command).toBe("bash");
   });
 });

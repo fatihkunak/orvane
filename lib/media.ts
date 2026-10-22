@@ -49,8 +49,8 @@ export const localMediaUrl = (name: string) => `${LOCAL_MEDIA_PREFIX}${name}`;
 const LOCAL_MEDIA = /^\/api\/media\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|png|gif|mp4)$/;
 
 /** Cloud name from CLOUDINARY_URL (cloudinary://key:secret@<cloud>), without ever touching the secret. */
-export function cloudinaryCloudName(): string | null {
-  const raw = process.env.CLOUDINARY_URL;
+export function cloudinaryCloudName(env: NodeJS.ProcessEnv = process.env): string | null {
+  const raw = env.CLOUDINARY_URL;
   if (!raw) return null;
   try {
     return new URL(raw).hostname || null;

@@ -77,7 +77,11 @@ ORVANE_UPDATE_ENABLED=1
 ORVANE_OWNER_EMAIL=senin@epostan.com   # yalnız bu hesapla giriş yapınca görünür
 ```
 
-Güncelleme şunları yapar (`deploy/update.cmd`): `git pull --ff-only` → `npm ci` → `prisma migrate deploy` → sunucuyu durdur → `npm run build` → yeniden başlat. Build başarısız olursa **eski sunucu ayakta kalır**. Yerelde commit edilmemiş değişiklik varsa `pull` reddeder (çalışman ezilmez). Kayıt: `deploy/logs/update.log`. Otomatik buton şu an **yalnız Windows** kurulumunda çalışır; diğer platformlarda aynı komutları elle çalıştır (kart bunu söyler).
+Güncelleme şunları yapar (`deploy/update.cmd` / `deploy/update.sh`): `git pull --ff-only` → `npm ci` → **veritabanı yedeği** → `prisma migrate deploy` → uygulamayı durdur → `npm run build` → yeniden başlat. Build başarısız olursa **eski sunucu ayakta kalır**. Yerelde commit edilmemiş değişiklik varsa `pull` reddeder (çalışman ezilmez). Kayıt: `deploy/logs/update.log`, yedekler: `deploy/logs/backup-*.sql` (son 5).
+
+- **Windows:** `deploy/update.cmd` port 3055'teki süreci kendisi durdurup yeniden başlatır.
+- **Linux/macOS:** `deploy/update.sh`; `orvane` adlı bir systemd birimi veya pm2 uygulaması varsa onunla durdurup başlatır, yoksa "kendin yeniden başlat" der.
+- **Yedek:** `pg_dump` PATH'te yoksa, veritabanı adresindeki portu yayınlayan Docker konteyneri üzerinden `pg_dump` çalıştırılır. İkisi de yoksa yedek atlanır ve güncelleme devam eder (log'a yazar).
 
 ## Nasıl çalışır
 
@@ -96,6 +100,7 @@ Ayrıntılı mimari: [`docs/wiki/`](docs/wiki/Index.md).
 - [TERMS.md](TERMS.md) — kullanım şartları, platform kuralları, sorumluluk
 - [CONTRIBUTING.md](CONTRIBUTING.md) — geliştirme akışı ve kalite kapıları
 - [CHANGELOG.md](CHANGELOG.md) — sürüm notları
+- [docs/VERIFY.md](docs/VERIFY.md) — elle doğrulama listesi (giriş, yayın, AI, MCP, güncelleme, hesap silme)
 
 ## Test
 

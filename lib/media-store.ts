@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { ALLOWED_MEDIA_TYPES, MAX_IMAGE_BYTES, MAX_VIDEO_BYTES, matchesSignature, type MediaKind } from "@/lib/media";
+import { cloudinaryConfig, type CloudinaryConfig } from "@/lib/cloudinary";
 
 /**
  * Where post media is written. One entry point for BOTH the upload route (the person picks a file) and AI image generation
@@ -12,19 +13,7 @@ import { ALLOWED_MEDIA_TYPES, MAX_IMAGE_BYTES, MAX_VIDEO_BYTES, matchesSignature
 const UPLOAD_DIR = path.join(process.cwd(), ".uploads");
 const FOLDER = "orvane";
 
-/** CLOUDINARY_URL looks like cloudinary://<api_key>:<api_secret>@<cloud_name> */
-function cloudinaryConfig() {
-  const raw = process.env.CLOUDINARY_URL;
-  if (!raw) return null;
-  try {
-    const u = new URL(raw);
-    return { apiKey: decodeURIComponent(u.username), apiSecret: decodeURIComponent(u.password), cloud: u.hostname };
-  } catch {
-    return null;
-  }
-}
-
-async function uploadToCloudinary(bytes: Uint8Array, mime: string, name: string, cfg: NonNullable<ReturnType<typeof cloudinaryConfig>>) {
+async function uploadToCloudinary(bytes: Uint8Array, mime: string, name: string, cfg: CloudinaryConfig) {
   const timestamp = String(Math.floor(Date.now() / 1000));
   // Signature = sha1 of the sorted "key=value" params (excluding file/api_key) + api secret
   const signature = createHash("sha1").update(`folder=${FOLDER}&timestamp=${timestamp}${cfg.apiSecret}`).digest("hex");
