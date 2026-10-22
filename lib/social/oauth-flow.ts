@@ -3,10 +3,10 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { encrypt } from "@/lib/crypto";
 import { prisma } from "@/lib/prisma";
+import { resolveCredentials } from "@/lib/social/app-credentials";
 import {
   PROVIDERS,
   buildAuthorizeUrl,
-  credentials,
   exchangeCode,
   fetchProfile,
   isProviderSlug,
@@ -31,7 +31,8 @@ export async function startConnect(req: Request, provider: string) {
   if (!isProviderSlug(provider)) return new NextResponse("Not found", { status: 404 });
   const session = await auth();
   if (!session?.user?.id) return NextResponse.redirect(new URL("/login", baseUrl(req)));
-  if (!credentials(provider)) return back(req, `error=not_configured&provider=${provider}`);
+  const creds = await resolveCredentials(session.user.id, provider);
+  if (!creds) return back(req, `error=not_configured&provider=${provider}`);
 
   const state = randomToken(24);
   const verifier = PROVIDERS[provider].pkce ? randomToken(48) : undefined;
@@ -41,6 +42,7 @@ export async function startConnect(req: Request, provider: string) {
       state,
       redirectUri: redirectUriFor(req, provider),
       codeChallenge: verifier ? pkceChallenge(verifier) : undefined,
+      creds,
     }),
   );
   // httpOnly + Lax: sent back on the platform's top-level redirect, invisible to page scripts
@@ -85,10 +87,13 @@ export async function finishConnect(req: Request, provider: string) {
   }
 
   try {
+    const creds = await resolveCredentials(session.user.id, provider);
+    if (!creds) return clear(back(req, `error=not_configured&provider=${provider}`));
     const tokens = await exchangeCode(provider, {
       code,
       redirectUri: redirectUriFor(req, provider),
       codeVerifier: saved.verifier,
+      creds,
     });
     const profile = await fetchProfile(provider, tokens);
     const platform = PROVIDERS[provider].platform;

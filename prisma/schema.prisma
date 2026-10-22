@@ -62,6 +62,24 @@ model User {
   posts          Post[]
   aiProviders    AiProviderConfig[]
   apiTokens      ApiToken[]
+  appCredentials SocialAppCredential[]
+}
+
+/// A user's OWN developer app at a platform (today: X). X bills API usage to the app owner, so every user brings their own
+/// app instead of sharing Orvane's. The secret is stored AES-GCM encrypted and is never sent back to the browser.
+model SocialAppCredential {
+  id           String   @id @default(cuid())
+  userId       String
+  provider     Platform
+  clientId     String
+  /// AES-GCM encrypted (see TOKEN_ENCRYPTION_KEY)
+  clientSecret String   @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, provider])
 }
 
 /// Personal access token for the MCP endpoint (local models and other MCP clients). Only the SHA-256 of the token is

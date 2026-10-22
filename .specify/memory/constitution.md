@@ -1,6 +1,7 @@
 <!--
 Sync Impact Report
-- Version change: 1.1.0 → 1.2.0 (MINOR: I. ilkeye MCP belirteçleri, yönetim API'si ve askıya alma kuralı eklendi)
+- Version change: 1.2.0 → 1.3.0 (MINOR: I. ilkeye X için kullanıcı başına uygulama anahtarı kuralı eklendi)
+- Önceki: 1.1.0 → 1.2.0 (MINOR: I. ilkeye MCP belirteçleri, yönetim API'si ve askıya alma kuralı eklendi)
 - Önceki: 1.0.0 → 1.1.0 (MINOR: I. ilkeye yapay zekâ sağlayıcı anahtarları, SSRF ve taslak kuralı eklendi)
 - Önceki sürüm: (şablon, sürümsüz) → 1.0.0
 - Eklenen ilkeler: I. Güvenlik Değişmezleri, II. Dürüst Raporlama ve Onaylı Yayın,
@@ -46,6 +47,10 @@ gevşetilemez:
   Yönetim API'si (`/api/admin/*`) MUST `ORVANE_ADMIN_TOKEN` (≥32 karakter, sabit zamanlı karşılaştırma)
   olmadan kapalıdır ve yanıtında OAuth token'ı, AI anahtarı veya belirteç özeti MUST bulunmaz. Askıdaki
   kullanıcı giriş yapamaz, belirteç kullanamaz ve gönderisi yayınlanmaz.
+- X API kullanımı uygulamanın sahibine faturalandığı için X, çok kullanıcılı kurulumda MUST kullanıcının KENDİ geliştirici
+  uygulamasıyla çalışır (`lib/social/app-credentials.ts`); Client Secret AES-256-GCM ile şifreli saklanır, tarayıcıya geri
+  gönderilmez ve günlüğe yazılmaz. Ortak `TWITTER_CLIENT_*` anahtarları yalnızca `SHARED_X_APP=1` ile (özel, tek sahipli kurulum)
+  kullanılır; başkalarının giriş yapabildiği kurulumda KAPALI olmalıdır.
 
 *Gerekçe: bir sızıntı veya çift gönderim, kullanıcının herkese açık hesabında geri alınamaz hasar
 yaratır.*
@@ -140,4 +145,4 @@ açıkça belirtilip önce anayasa değiştirilir ya da plan düzeltilir.
   ihlallerini kontrol eder. Karmaşıklık veya ihlal gerekçelendirilmeden kabul edilmez.
 - **Çalışma rehberi:** günlük geliştirme bilgisi için `CLAUDE.md` ve `docs/wiki/` kullanılır.
 
-**Version**: 1.2.0 | **Ratified**: 2026-10-22 | **Last Amended**: 2026-10-22
+**Version**: 1.3.0 | **Ratified**: 2026-10-22 | **Last Amended**: 2026-10-22

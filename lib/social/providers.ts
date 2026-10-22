@@ -108,12 +108,14 @@ export function pkceChallenge(verifier: string): string {
 // Authorization URL
 // ---------------------------------------------------------------------------
 
+type Creds = { clientId: string; clientSecret: string };
+
 export function buildAuthorizeUrl(
   slug: ProviderSlug,
-  opts: { state: string; redirectUri: string; codeChallenge?: string },
+  opts: { state: string; redirectUri: string; codeChallenge?: string; creds?: Creds | null },
 ): string {
   const p = PROVIDERS[slug];
-  const creds = credentials(slug);
+  const creds = opts.creds ?? credentials(slug);
   if (!creds) throw new Error(`${p.label} is not configured`);
 
   const url = new URL(p.authorizeUrl);
@@ -171,9 +173,9 @@ function toTokenSet(json: Record<string, unknown>): TokenSet {
 
 export async function exchangeCode(
   slug: ProviderSlug,
-  opts: { code: string; redirectUri: string; codeVerifier?: string },
+  opts: { code: string; redirectUri: string; codeVerifier?: string; creds?: Creds | null },
 ): Promise<TokenSet> {
-  const creds = credentials(slug);
+  const creds = opts.creds ?? credentials(slug);
   if (!creds) throw new Error(`${slug} is not configured`);
 
   if (slug === "twitter") {
@@ -227,8 +229,9 @@ export async function exchangeCode(
 export async function refreshTokenSet(
   slug: ProviderSlug,
   current: { accessToken: string; refreshToken: string | null },
+  credsOverride?: Creds | null,
 ): Promise<TokenSet> {
-  const creds = credentials(slug);
+  const creds = credsOverride ?? credentials(slug);
   if (!creds) throw new Error(`${slug} is not configured`);
 
   if (slug === "twitter") {

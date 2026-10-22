@@ -1,6 +1,7 @@
 import "server-only";
 import { decrypt, encrypt } from "@/lib/crypto";
 import { prisma } from "@/lib/prisma";
+import { resolveCredentials } from "@/lib/social/app-credentials";
 import { providerFor, refreshTokenSet, type TokenSet } from "@/lib/social/providers";
 
 /** Thrown when a token is dead and only the user can fix it by connecting the account again. */
@@ -52,10 +53,13 @@ export async function getAccessToken(accountId: string): Promise<{ accessToken: 
   const expired = account.expiresAt !== null && account.expiresAt.getTime() <= Date.now();
   if (needsRefresh(provider.slug, { ...account, hasRefreshToken: !!account.refreshToken })) {
     try {
-      const fresh = await refreshTokenSet(provider.slug, {
-        accessToken: decrypt(account.accessToken),
-        refreshToken: account.refreshToken ? decrypt(account.refreshToken) : null,
-      });
+      // The app the account was connected with: the user's own X app, or Orvane's for the other platforms
+      const creds = await resolveCredentials(account.userId, provider.slug);
+      const fresh = await refreshTokenSet(
+        provider.slug,
+        { accessToken: decrypt(account.accessToken), refreshToken: account.refreshToken ? decrypt(account.refreshToken) : null },
+        creds,
+      );
       account = await saveTokens(account.id, fresh);
     } catch (e) {
       // Another job may have refreshed (and rotated) the token while we were trying

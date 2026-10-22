@@ -223,6 +223,9 @@
   "Accounts": {
     "category": "Entegrasyonlar",
     "paths": [
+      "lib/social/app-credentials.ts",
+      "components/platform/app-keys-form.tsx",
+      "tests/app-credentials.test.ts",
       "lib/social/providers.ts",
       "lib/social/oauth-flow.ts",
       "lib/social/tokens.ts",

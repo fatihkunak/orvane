@@ -3,13 +3,15 @@ import { DisconnectButton } from "@/components/platform/disconnect-button";
 import { PlatformChip } from "@/components/platform/platform-icon";
 import { buttonVariants } from "@/components/ui/button";
 import { prisma } from "@/lib/prisma";
-import { PROVIDERS, credentials, isProviderSlug } from "@/lib/social/providers";
+import { AppKeysForm } from "@/components/platform/app-keys-form";
+import { BRING_YOUR_OWN, credentialStatus, resolveCredentials } from "@/lib/social/app-credentials";
+import { PROVIDERS, isProviderSlug } from "@/lib/social/providers";
 import { cn } from "@/lib/utils";
 
 export const metadata = { title: "Hesaplar" };
 
 const ERRORS: Record<string, string> = {
-  not_configured: "Bu platform için API anahtarları ayarlanmamış (.env).",
+  not_configured: "Bu platform için uygulama anahtarları yok. X için önce aşağıdaki kutuya kendi uygulama anahtarlarını gir; diğerleri sunucu ayarındadır (.env).",
   denied: "Bağlantı izni verilmedi.",
   invalid_state: "Oturum doğrulaması başarısız oldu, tekrar dene.",
   failed: "Hesap bağlanamadı. Ayrıntı sunucu günlüğünde.",
@@ -26,6 +28,12 @@ export default async function AccountsPage({
     where: { userId: session!.user.id }, // layout guarantees a session
     orderBy: { createdAt: "asc" },
   });
+
+  const userId = session!.user.id;
+  // Which platforms can connect for THIS user, and (for X) the user's own app keys
+  const configuredBy = Object.fromEntries(await Promise.all(Object.values(PROVIDERS).map(async (p) => [p.slug, !!(await resolveCredentials(userId, p.slug))])));
+  const xStatus = await credentialStatus(userId, "twitter");
+  const origin = process.env.APP_URL ?? process.env.AUTH_URL ?? "http://localhost:3055";
 
   const connectedLabel = sp.connected && isProviderSlug(sp.connected) ? PROVIDERS[sp.connected].label : null;
 
@@ -45,7 +53,8 @@ export default async function AccountsPage({
 
       {Object.values(PROVIDERS).map((p) => {
         const mine = accounts.filter((a) => a.provider === p.platform);
-        const configured = !!credentials(p.slug);
+        const configured = !!configuredBy[p.slug];
+        const own = BRING_YOUR_OWN.has(p.slug);
 
         return (
           <section key={p.slug} aria-labelledby={`h-${p.slug}`} className="card-surface space-y-4 p-4">
@@ -60,14 +69,25 @@ export default async function AccountsPage({
                   {mine.length ? "Başka hesap ekle" : "Bağla"}
                 </a>
               ) : (
-                <span className="text-muted-foreground text-xs">Yapılandırılmadı</span>
+                <span className="text-muted-foreground text-xs">{own ? "Önce anahtarlarını gir" : "Yapılandırılmadı"}</span>
               )}
             </div>
 
-            {!configured && (
-              <p className="text-muted-foreground text-xs">
-                <code>{p.clientIdEnv}</code> ve <code>{p.clientSecretEnv}</code> değerlerini <code>.env</code> dosyasına ekle.
-              </p>
+            {own ? (
+              <AppKeysForm
+                label={p.label}
+                consoleUrl="https://developer.x.com/en/portal/dashboard"
+                callbackUrl={`${origin}/api/connect/${p.slug}/callback`}
+                hasOwn={xStatus.hasOwn}
+                clientIdHint={xStatus.clientIdHint}
+                usingShared={!xStatus.hasOwn && xStatus.sharedAvailable}
+              />
+            ) : (
+              !configured && (
+                <p className="text-muted-foreground text-xs">
+                  <code>{p.clientIdEnv}</code> ve <code>{p.clientSecretEnv}</code> değerlerini <code>.env</code> dosyasına ekle.
+                </p>
+              )
             )}
 
             {mine.map((a) => (

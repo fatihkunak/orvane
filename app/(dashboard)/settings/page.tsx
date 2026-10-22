@@ -10,8 +10,8 @@ export const metadata = { title: "Ayarlar" };
 function checklist() {
   const items = Object.values(PROVIDERS).map((p) => ({
     label: `${p.label} API anahtarları`,
-    hint: `${p.clientIdEnv}, ${p.clientSecretEnv}`,
-    ok: !!credentials(p.slug),
+    hint: p.slug === "twitter" ? "Her kullanıcı kendi X uygulamasını Hesaplar sayfasında ekler" : `${p.clientIdEnv}, ${p.clientSecretEnv}`,
+    ok: p.slug === "twitter" ? true : !!credentials(p.slug),
   }));
   items.push(
     { label: "Token şifreleme anahtarı", hint: "TOKEN_ENCRYPTION_KEY", ok: !!process.env.TOKEN_ENCRYPTION_KEY },

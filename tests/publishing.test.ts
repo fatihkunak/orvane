@@ -160,6 +160,7 @@ describe("publish job", () => {
   });
 
   it("refreshes an expired X token (rotating the refresh token) before posting", async () => {
+    vi.stubEnv("SHARED_X_APP", "1");
     vi.stubEnv("TWITTER_CLIENT_ID", "xid");
     vi.stubEnv("TWITTER_CLIENT_SECRET", "xsecret");
     await prisma.socialAccount.update({

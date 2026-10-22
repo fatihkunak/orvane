@@ -20,6 +20,7 @@ afterAll(async () => {
 beforeEach(() => {
   authMock.mockResolvedValue({ user: { id: userId } });
   vi.stubEnv("APP_URL", BASE);
+  vi.stubEnv("SHARED_X_APP", "1"); // these tests cover the shared (private install) mode; per-user keys are in app-credentials.test.ts
   vi.stubEnv("TWITTER_CLIENT_ID", "xid");
   vi.stubEnv("TWITTER_CLIENT_SECRET", "xsecret");
   vi.stubEnv("THREADS_APP_ID", "tid");

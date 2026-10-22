@@ -2,6 +2,7 @@
 
 Akış: `GET /api/connect/<slug>` (`lib/social/oauth-flow.ts#startConnect`) → platform onayı → `/callback` (`finishConnect`) → `SocialAccount` upsert (`@@unique[userId, provider, platformUserId]`).
 
+- **X: kullanıcı başına uygulama (2026-10-22).** X, API kullanımını uygulamanın sahibine faturalar; herkese açık kullanımda maliyet Orvane sahibine yazılmasın diye her kullanıcı KENDİ X geliştirici uygulamasını getirir (`SocialAppCredential`, `lib/social/app-credentials.ts`). `resolveCredentials(userId, slug)`: X için kullanıcının kendi kaydı; yoksa ortam anahtarları YALNIZ `SHARED_X_APP=1` ise (özel, tek sahipli kurulum), aksi halde `null` (bağlanamaz, "önce anahtarlarını gir"). LinkedIn ve Threads Orvane'in kendi uygulamasını kullanır. Client Secret AES-GCM şifreli, yalnız yazılır (arayüze dönmez). Bağlama (`oauth-flow`) ve token yenileme (`tokens.ts`) hesabın sahibinin anahtarını kullanır. Bağlı X hesabı varken anahtarlar kaldırılamaz (yenileme çalışmaz olurdu). Arayüz: Hesaplar → X bölümünde `components/platform/app-keys-form.tsx` (kullanıcıya konsol adresi, callback URL'si ve adımlar gösterilir).
 - Güvenlik: rastgele `state` + (X için) PKCE verifier, `httpOnly; SameSite=Lax; Path=/api/connect` çerezinde (10 dk). Callback: state eşleşmeli, çerezdeki userId oturumla aynı olmalı, çerez tek kullanımlık (silinir). Eşleşmezse token takası HİÇ yapılmaz.
 - Token'lar `lib/crypto.ts` ile AES-256-GCM (`v1.iv.tag.ct`), `TOKEN_ENCRYPTION_KEY` (32 bayt base64).
 - Sağlayıcılar `lib/social/providers.ts` (uç noktalar resmî dokümandan doğrulandı):
