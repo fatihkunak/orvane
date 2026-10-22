@@ -386,6 +386,14 @@ describe("prompts and parsing", () => {
     expect(ok).toMatchObject({ tone: "friendly", language: "auto", count: 2, hashtags: "few", emoji: "few", platforms: [] });
   });
 
+  it("salvages the texts from almost-JSON (a stray quote, as Gemini flash-lite sometimes writes)", () => {
+    const broken = '{"variants":[{"text":"Birinci \\"alıntılı\\" metin #a","},{"text":"İkinci metin\\nsatır #b"}]}';
+    expect(() => JSON.parse(broken)).toThrow();
+    expect(parseVariants(broken, 3)).toEqual(['Birinci "alıntılı" metin #a', "İkinci metin\nsatır #b"]);
+    expect(parseVariants(broken, 1)).toEqual(['Birinci "alıntılı" metin #a']);
+    expect(parseVariants('{"variants":[{"text":', 2)).toEqual([]); // nothing usable stays empty
+  });
+
   it("parses the usual answer shapes", () => {
     const a = { variants: [{ text: "one" }, { text: "two" }] };
     expect(parseVariants(JSON.stringify(a), 3)).toEqual(["one", "two"]);

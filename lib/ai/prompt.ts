@@ -178,6 +178,19 @@ function candidateTexts(v: unknown): string[] {
   return [];
 }
 
+/** Every `"text": "…"` string value in broken JSON, decoded; strings that do not decode are skipped. */
+function salvageTexts(raw: string): string[] {
+  const out: string[] = [];
+  for (const m of raw.matchAll(/"text"\s*:\s*"((?:[^"\\]|\\.)*)"/g)) {
+    try {
+      out.push(JSON.parse(`"${m[1]}"`) as string);
+    } catch {
+      /* an invalid escape inside this one string: skip it */
+    }
+  }
+  return out;
+}
+
 /**
  * Pulls the post texts out of a model answer. Tolerates markdown fences, thinking blocks, text around the JSON, several JSON
  * shapes and (for single-variant requests) a plain-text answer. Returns at most `count` distinct, non-empty texts.
@@ -196,6 +209,9 @@ export function parseVariants(raw: string, count: number): string[] {
       }
     }
   }
+  // Some models (seen: Gemini flash-lite) emit almost-JSON, e.g. a stray `,"` before a closing brace. The texts themselves are
+  // intact, so pull every "text" string out one by one instead of giving up on the whole answer.
+  if (found.length === 0 && start >= 0) found = salvageTexts(cleaned);
   if (found.length === 0 && count === 1 && cleaned && !/^[{[]/.test(cleaned)) found = [cleaned.replace(/^["“]|["”]$/g, "")];
   const seen = new Set<string>();
   const out: string[] = [];
