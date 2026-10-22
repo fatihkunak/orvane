@@ -23,9 +23,13 @@ test("a missing path gets our own 404 page", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Bu sayfa yok" })).toBeVisible();
 });
 
-test("protected pages redirect to login when signed out", async ({ page }) => {
-  await page.goto("/dashboard");
-  await expect(page).toHaveURL(/\/login/);
+test("protected pages redirect to login when signed out", async ({ request }) => {
+  // Assert the redirect itself instead of following it: the Location header is built from AUTH_URL, which in CI is the
+  // app's real address (3000) while the test server listens elsewhere. Following it made the test depend on that host
+  // being alive; what matters here is that a signed-out visitor is never served the page.
+  const res = await request.get("/dashboard", { maxRedirects: 0 });
+  expect([302, 307, 308]).toContain(res.status());
+  expect(res.headers()["location"] ?? "").toContain("/login");
 });
 
 test("security headers are present, CSP is report-only", async ({ request }) => {

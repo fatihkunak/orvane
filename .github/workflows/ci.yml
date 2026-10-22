@@ -73,3 +73,7 @@ jobs:
 
       - name: Browser tests (public surfaces)
         run: npm run e2e
+        env:
+          # The test server listens on 3100, so redirects/auth URLs must point there, not at the production address
+          AUTH_URL: http://127.0.0.1:3100
+          APP_URL: http://127.0.0.1:3100
