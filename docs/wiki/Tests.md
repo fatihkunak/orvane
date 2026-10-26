@@ -4,6 +4,7 @@
 - `unit.test.ts`: crypto, karakter sayımı, zod şeması, durum türetme, token yenileme politikası, LinkedIn kaçışı, OAuth URL/takas/yenileme (sahte fetch), SSRF beyaz listesi, dosya imzası.
 - `publishers.test.ts`: X/LinkedIn/Threads tam istek dizileri (sahte fetch+sleep): parçalı yükleme, ETag, video işleme beklemesi, hata sınıflandırma.
 - `token-refresh-race.test.ts`: GERÇEK DB + X gibi davranan sahte sağlayıcı (tek kullanımlık refresh token, yavaş yanıt); 3 eşzamanlı `getAccessToken` → tek yenileme, hepsi yeni token alır; gerçek ret → yine `ReconnectRequiredError`.
+- `upload-cap.test.ts`: başlıksız (chunked) 8 MB gövde → 413 ve gövdenin yarısından azı okunur (tam tamponlanmaz); normal küçük yükleme 200.
 - `publishing.test.ts`: GERÇEK DB; tam yayın, eşzamanlı iki koşuda tek gönderim, kısmi hata, token yenileme+rotasyon, ölü token, Threads adımları, bayat claim.
 - `oauth-flow.test.ts`: GERÇEK DB; state/PKCE/çerez, CSRF reddi, başka kullanıcı/çerezsiz tekrar, reddetme, şifreli kayıt, yeniden bağlamada upsert.
 

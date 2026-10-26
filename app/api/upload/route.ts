@@ -9,6 +9,30 @@ export const runtime = "nodejs";
 const UPLOAD_LIMIT = { count: 40, windowMs: 10 * 60_000 };
 
 /**
+ * Parses the multipart body like `req.formData()`, but counts the bytes as they stream in and cuts the request off once
+ * they pass `max`, so an oversized body is never held in memory in full. `exceeded()` tells the caller why parsing failed.
+ */
+function readFormCapped(req: Request, max: number) {
+  let seen = 0;
+  let over = false;
+  const contentType = req.headers.get("content-type");
+  if (!req.body || !contentType) return { form: Promise.reject(new Error("no body")) as Promise<FormData>, exceeded: () => false };
+
+  const limited = req.body.pipeThrough(
+    new TransformStream<Uint8Array, Uint8Array>({
+      transform(chunk, controller) {
+        seen += chunk.byteLength;
+        if (seen > max) {
+          over = true;
+          controller.error(new Error("body too large"));
+        } else controller.enqueue(chunk);
+      },
+    }),
+  );
+  return { form: new Response(limited, { headers: { "content-type": contentType } }).formData(), exceeded: () => over };
+}
+
+/**
  * Upload endpoint for the post form. Validation and storage live in `lib/media-store.ts`, shared with AI image generation so
  * both paths accept exactly the same formats and produce URLs `isAllowedMediaUrl` accepts.
  */
@@ -25,12 +49,16 @@ export async function POST(req: Request) {
   }
 
   // Refuse an oversized body before it is buffered into memory (multipart overhead gets a small allowance)
+  const maxBody = MAX_VIDEO_BYTES + 1024 * 1024;
   const declared = Number(req.headers.get("content-length"));
-  if (Number.isFinite(declared) && declared > MAX_VIDEO_BYTES + 1024 * 1024) {
+  if (Number.isFinite(declared) && declared > maxBody) {
     return Response.json({ error: "Dosya çok büyük" }, { status: 413 });
   }
 
-  const form = await req.formData().catch(() => null);
+  // The header can be missing (chunked upload) or wrong, so the limit is enforced on the bytes themselves as they arrive
+  const capped = readFormCapped(req, maxBody);
+  const form = await capped.form.catch(() => null);
+  if (capped.exceeded()) return Response.json({ error: "Dosya çok büyük" }, { status: 413 });
   const file = form?.get("file");
   if (!(file instanceof File)) return Response.json({ error: "Dosya bulunamadı" }, { status: 400 });
 

@@ -19,7 +19,7 @@ Bu dosya [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) biçimini izle
 - Sağlayıcı yanıt gövdesine boyut sınırı; eksik özel IP aralıkları (`198.18.0.0/15`, `192.0.0.0/24`, çok noktaya yayın, `fec0::/10`, NAT64) eklendi.
 - Kullanıcı metni prompt etiketlerini (`</brief>`, `</text>`, `<task>`, `<rules>`) kapatıp talimat enjekte edemez.
 - Yönetim API'sinin başarısız-deneme sınırı sahte `X-Forwarded-For` ile atlatılamaz; hız sınırlayıcı bellek sızıntısı kapandı.
-- Yükleme: `Content-Length` izin verilen en büyük dosyayı aşıyorsa gövde belleğe alınmadan 413.
+- Yükleme: `Content-Length` izin verilen en büyük dosyayı aşıyorsa gövde belleğe alınmadan 413; başlık yoksa (chunked) ya da yalansa gövde akarken sayılır ve sınırı geçince kesilir.
 
 ## [0.1.0] — 2026-10-22
 
