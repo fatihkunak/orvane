@@ -13,10 +13,18 @@ export const allowPrivateUrls = () => process.env.ALLOW_PRIVATE_LLM_URLS === "1"
 export function isPrivateIp(ip: string): boolean {
   if (ip.includes(":")) {
     const l = ip.toLowerCase();
-    return l === "::1" || l === "::" || l.startsWith("fe80") || l.startsWith("fc") || l.startsWith("fd") || l.startsWith("::ffff:");
+    return (
+      l === "::1" ||
+      l === "::" ||
+      /^fe[89abcdef]/.test(l) || // link-local fe80::/10 and deprecated site-local fec0::/10
+      l.startsWith("fc") ||
+      l.startsWith("fd") ||
+      l.startsWith("::ffff:") ||
+      l.startsWith("64:ff9b:") // NAT64 can embed any IPv4 address, internal ones included
+    );
   }
-  const [a, b] = ip.split(".").map(Number) as [number, number];
-  return a === 10 || a === 127 || a === 0 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127);
+  const [a, b, c] = ip.split(".").map(Number) as [number, number, number];
+  return a === 10 || a === 127 || a === 0 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127) || (a === 198 && (b === 18 || b === 19)) || (a === 192 && b === 0 && c === 0) || a >= 224;
 }
 
 export async function assertSafeBaseUrl(raw: string, allowPrivate = allowPrivateUrls()): Promise<void> {
