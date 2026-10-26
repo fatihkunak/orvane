@@ -18,9 +18,9 @@ export type PostItem = {
 export type PostDTO = Omit<PostItem, "scheduledAt"> & { scheduledAt: string };
 
 /**
- * The edit form (`getPostForForm`) only opens a DRAFT or a SCHEDULED post; a FAILED, PUBLISHING or PUBLISHED one is a 404,
- * so no list or notification may link to it.
+ * The edit form (`getPostForForm`) opens a DRAFT, a SCHEDULED or a FAILED post; a PUBLISHED one is a 404, so no list or
+ * notification may link to it.
  */
-export const isEditableStatus = (status: PostStatus): boolean => status === "DRAFT" || status === "SCHEDULED";
+export const isEditableStatus = (status: PostStatus): boolean => status === "DRAFT" || status === "SCHEDULED" || status === "FAILED";
 
-export const hydratePost =(d: PostDTO): PostItem => ({ ...d, scheduledAt: new Date(d.scheduledAt) });
+export const hydratePost = (d: PostDTO): PostItem => ({ ...d, scheduledAt: new Date(d.scheduledAt) });

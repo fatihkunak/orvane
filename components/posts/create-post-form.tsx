@@ -96,7 +96,10 @@ export function CreatePostForm({ connected, aiProviders, initial }: { connected:
     Object.fromEntries(Object.entries(initial?.mediaByPlatform ?? {}).map(([k, v]) => [k, toMedia(v ?? [])])),
   );
   const [uploading, setUploading] = useState(0);
-  const [when, setWhen] = useState<When>("schedule");
+  // A failed post is usually fixed to go out again right away; its platforms that already published stay locked
+  const failedPost = initial?.status === "FAILED";
+  const lockedPlatforms = initial?.publishedPlatforms ?? [];
+  const [when, setWhen] = useState<When>(failedPost ? "now" : "schedule");
   // Default schedule: next full hour, in the browser's timezone. A scheduled post being edited keeps its own time.
   const [defaultAt] = useState(() => {
     if (initial?.scheduledAt) return new Date(initial.scheduledAt);
@@ -202,9 +205,15 @@ export function CreatePostForm({ connected, aiProviders, initial }: { connected:
           <Label>Platformlar</Label>
           <PlatformSelector
             value={platforms}
-            onToggle={(p) => setPlatforms((prev) => (prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]))}
+            onToggle={(p) => setPlatforms((prev) => (lockedPlatforms.includes(p) ? prev : prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]))}
             connected={connected}
+            locked={lockedPlatforms}
           />
+          {failedPost && (
+            <p className="text-muted-foreground mt-2 text-xs">
+              Başarısız bir gönderiyi düzeltiyorsun. Zaten yayınlanan platformlar tekrar gönderilmez, yalnızca diğerleri yeniden denenir.
+            </p>
+          )}
         </section>
 
         <AiAssistant
@@ -385,9 +394,11 @@ export function CreatePostForm({ connected, aiProviders, initial }: { connected:
             {pending && <Loader2 className="size-4 animate-spin" />}
             {when === "now" ? "Yayınla" : "Planla"}
           </Button>
-          <Button type="button" variant="outline" disabled={!canSubmit} onClick={() => submit("draft")} className="h-11">
-            Taslak olarak kaydet
-          </Button>
+          {!failedPost && (
+            <Button type="button" variant="outline" disabled={!canSubmit} onClick={() => submit("draft")} className="h-11">
+              Taslak olarak kaydet
+            </Button>
+          )}
         </div>
       </form>
 

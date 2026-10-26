@@ -4,6 +4,10 @@ Bu dosya [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) biçimini izle
 
 ## [Unreleased]
 
+### Eklenen
+
+- **Başarısız gönderiyi yeniden dene / düzelt:** takvimde "Şimdi yeniden dene" ve "Yeni saatte dene"; kalem ikonuyla form açılır, metin düzeltilip yeniden gönderilir. Kısmen yayınlanmış gönderide yayınlanan platform kilitlidir ve ikinci kez GÖNDERİLMEZ, yalnız başarısız platformlar yeniden denenir. Başarısız gönderi artık taslağa çevrilemez.
+
 ### Düzeltilen
 
 - **Takvim:** 500'den fazla tarihli gönderisi olan kullanıcıda yaklaşan gönderiler listeden düşüyordu.

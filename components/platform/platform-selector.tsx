@@ -14,15 +14,18 @@ type Props = {
   /** Called with the platform to flip; the parent applies it with a functional state update */
   onToggle: (platform: Platform) => void;
   connected: ConnectedMap;
+  /** Platforms that already published (a failed post being fixed): shown selected, cannot be unselected */
+  locked?: Platform[];
 };
 
 /** Toggle buttons for the target platforms. Platforms without a connected account are disabled. */
-export function PlatformSelector({ value, onToggle, connected }: Props) {
+export function PlatformSelector({ value, onToggle, connected, locked = [] }: Props) {
   return (
     <div role="group" aria-label="Platformlar" className="grid gap-2 sm:grid-cols-3">
       {PLATFORM_LIST.map(({ id, label }) => {
         const account = connected[id];
         const selected = value.includes(id);
+        const isLocked = locked.includes(id);
 
         if (!account) {
           return (
@@ -45,16 +48,22 @@ export function PlatformSelector({ value, onToggle, connected }: Props) {
             key={id}
             type="button"
             aria-pressed={selected}
+            disabled={isLocked}
             onClick={() => onToggle(id)}
             className={cn(
               "flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-sm transition-colors",
               selected ? "border-brand-teal bg-brand-teal/10" : "border-border hover:bg-surface-2",
+              isLocked && "cursor-not-allowed opacity-70",
             )}
           >
             <PlatformChip platform={id} />
             <span className="min-w-0 flex-1">
               <span className="block font-medium">{label}</span>
-              {account.username && <span className="text-muted-foreground block truncate text-xs">@{account.username}</span>}
+              {isLocked ? (
+                <span className="text-muted-foreground block truncate text-xs">Zaten yayınlandı</span>
+              ) : (
+                account.username && <span className="text-muted-foreground block truncate text-xs">@{account.username}</span>
+              )}
             </span>
             {selected && <Check className="text-brand-teal size-4 shrink-0" />}
           </button>

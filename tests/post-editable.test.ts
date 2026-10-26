@@ -18,9 +18,9 @@ afterAll(async () => {
 });
 
 describe("isEditableStatus", () => {
-  it("is true only for DRAFT and SCHEDULED", () => {
+  it("is true only for DRAFT, SCHEDULED and FAILED", () => {
     const editable = Object.values(PostStatus).filter(isEditableStatus).sort();
-    expect(editable).toEqual(["DRAFT", "SCHEDULED"]);
+    expect(editable).toEqual(["DRAFT", "FAILED", "SCHEDULED"]);
   });
 
   it("agrees with what the edit page opens for a future post", async () => {

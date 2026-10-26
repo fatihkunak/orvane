@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { inngest, POST_PUBLISH_REQUESTED, publishEventId } from "@/inngest/client";
 import { prisma } from "@/lib/prisma";
-import { createPostForUser, reschedulePostForUser, updateDraftForUser, type CreatePostResult } from "@/lib/post-create";
+import { createPostForUser, reschedulePostForUser, retryFailedPostForUser, updateDraftForUser, type CreatePostResult } from "@/lib/post-create";
 import { removeUnreferencedMedia } from "@/lib/media-cleanup";
 import type { CreatePostInput } from "@/lib/validation/post";
 
@@ -54,6 +54,19 @@ export async function reschedulePostAction(postId: string, scheduledAt: string):
   if (!r.ok) return r;
   revalidatePath("/calendar");
   revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+/**
+ * Sends a failed post again as it is: now (`scheduledAt` null) or at a chosen time. Platforms that already published are not
+ * sent again, only the failed ones.
+ */
+export async function retryFailedPostAction(postId: string, scheduledAt: string | null): Promise<ActionResult> {
+  const userId = (await auth())?.user?.id;
+  if (!userId) return SESSION_EXPIRED;
+  const r = await retryFailedPostForUser(userId, postId, scheduledAt);
+  if (!r.ok) return r;
+  await afterSave(postId, r.mode);
   return { ok: true };
 }
 

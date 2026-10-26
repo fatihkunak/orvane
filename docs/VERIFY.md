@@ -24,6 +24,9 @@ Otomatik testler para/hesap gerektiren yolları kapsamaz. Bu liste, **yeni bir t
 - [ ] Aynı satırda **"Saati değiştir"** → 4 dakika sonrası → Kaydet.
 - [ ] Zamanı gelene kadar bekle (Inngest her dakika bakar).
 - **Beklenen:** Gönderi platformda görünür, durum `Yayınlandı`; başarısızsa zil menüsünde hata mesajı.
+- [ ] **Başarısız gönderi:** bir platformu bilerek hatalı bırak (ör. hesabın token'ını iptal et) → zil → bildirim `/calendar`'a götürür → satırda **"Hata"** rozeti, kalem ikonu, **"Şimdi yeniden dene"** ve **"Yeni saatte dene"**.
+- [ ] Kalem → form açılır, metin düzeltilebilir; **"Taslak olarak kaydet" görünmez**. Birden fazla platformlu bir gönderide biri yayınlanmış, biri başarısızsa yayınlanan platform **"Zaten yayınlandı"** ile kilitlidir ve yeniden gönderilmez.
+- **Beklenen:** Yalnız başarısız platform yeniden yayınlanır; yayınlanmış olan platformda İKİNCİ bir gönderi OLUŞMAZ.
 - **Tutmazsa:** Inngest Dev Server penceresinde `schedule-due-posts` çalışıyor mu; platform token süresi; X kredisi.
 
 ## 4. Yapay zekâ — metin

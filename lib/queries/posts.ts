@@ -78,20 +78,23 @@ export interface DraftForm {
   overrides: Partial<Record<Platform, string>>;
   mediaUrls: string[];
   mediaByPlatform: Partial<Record<Platform, string[]>>;
-  /** DRAFT = plain draft; SCHEDULED = still in the future, so it can be changed or unscheduled */
-  status: "DRAFT" | "SCHEDULED";
+  /** DRAFT = plain draft; SCHEDULED = still in the future, so it can be changed or unscheduled; FAILED = can be fixed and sent again */
+  status: "DRAFT" | "SCHEDULED" | "FAILED";
+  /** Platforms of a FAILED post that already went out: locked in the form, never sent a second time */
+  publishedPlatforms: Platform[];
   /** ISO time of a scheduled post, so the form opens on it instead of a fresh default; null for drafts */
   scheduledAt: string | null;
 }
 
 /**
  * The form can open a draft or a scheduled post that has NOT gone out yet. A post whose time has come (or one the publisher is
- * already claiming) is excluded: editing it would race with sending it. Published/failed posts are not editable at all.
+ * already claiming) is excluded: editing it would race with sending it. A FAILED post can be fixed and sent again (the platforms
+ * that already published stay as they are); a fully published one is not editable.
  */
 export async function getPostForForm(userId: string, id: string): Promise<DraftForm | null> {
   const p = await prisma.post.findFirst({
-    where: { id, userId, OR: [{ status: "DRAFT" }, { status: "SCHEDULED", scheduledAt: { gt: new Date() } }] },
-    include: { platforms: { select: { platform: true, text: true, mediaUrls: true } } },
+    where: { id, userId, OR: [{ status: "DRAFT" }, { status: "SCHEDULED", scheduledAt: { gt: new Date() } }, { status: "FAILED" }] },
+    include: { platforms: { select: { platform: true, text: true, mediaUrls: true, status: true } } },
   });
   if (!p) return null;
   const overrides: DraftForm["overrides"] = {};
@@ -109,7 +112,8 @@ export async function getPostForForm(userId: string, id: string): Promise<DraftF
     overrides,
     mediaUrls: p.mediaUrls,
     mediaByPlatform,
-    status: p.status === "SCHEDULED" ? "SCHEDULED" : "DRAFT",
+    status: p.status === "SCHEDULED" ? "SCHEDULED" : p.status === "FAILED" ? "FAILED" : "DRAFT",
+    publishedPlatforms: p.platforms.filter((x) => x.status === "PUBLISHED").map((x) => x.platform),
     scheduledAt: p.status === "SCHEDULED" && p.scheduledAt ? p.scheduledAt.toISOString() : null,
   };
 }

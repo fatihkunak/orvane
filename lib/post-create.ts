@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
+import type { PostStatus } from "@/generated/prisma/enums";
 import { PLATFORMS } from "@/lib/platforms";
 import { createPostSchema, scheduleTimeSchema, type CreatePostInput } from "@/lib/validation/post";
 
@@ -59,36 +60,91 @@ export async function createPostForUser(userId: string, input: CreatePostInput):
   return { ok: true, id: post.id, mode: p.data.mode };
 }
 
+/** Thrown inside the edit transaction to undo it with a message for the user. */
+class EditRefused extends Error {}
+
+/** Matches the post only while it is still in `status` AND still editable there (a scheduled post whose time has come is not). */
+const editableAs = (userId: string, postId: string, status: PostStatus) => ({
+  id: postId,
+  userId,
+  status,
+  ...(status === "SCHEDULED" ? { scheduledAt: { gt: new Date() } } : {}),
+});
+
 /**
  * Saves the form over an existing post and, depending on the mode, keeps it a draft, schedules it or queues it for publishing.
- * A DRAFT and a SCHEDULED post that is still in the future may be changed; anything already sent (or being sent right now, i.e.
- * a scheduled post whose time has come) is left alone.
+ * A DRAFT, a SCHEDULED post that is still in the future and a FAILED one may be changed; anything already sent (or being sent
+ * right now, i.e. a scheduled post whose time has come) is left alone.
+ *
+ * A FAILED post may be half published (X went out, LinkedIn failed). Its published platforms are never touched, dropped or sent
+ * again; only the failed (and newly added) platforms go back to PENDING with the new text. It cannot become a draft.
  */
 export async function updateDraftForUser(userId: string, postId: string, input: CreatePostInput): Promise<CreatePostResult> {
-  const editable = { id: postId, userId, OR: [{ status: "DRAFT" as const }, { status: "SCHEDULED" as const, scheduledAt: { gt: new Date() } }] };
-  const existing = await prisma.post.findFirst({ where: editable, select: { status: true } });
+  const existing = await prisma.post.findFirst({
+    where: { id: postId, userId, OR: [{ status: "DRAFT" }, { status: "SCHEDULED", scheduledAt: { gt: new Date() } }, { status: "FAILED" }] },
+    select: { status: true },
+  });
   if (!existing) return { ok: false, error: "Gönderi bulunamadı ya da artık düzenlenemiyor" };
 
   const p = await prepare(userId, input);
   if (!p.ok) return p;
+  const failed = existing.status === "FAILED";
+  if (failed && p.data.mode === "draft") return { ok: false, error: "Yayınlanmaya çalışılmış bir gönderi taslağa çevrilemez; yeniden planla ya da şimdi yayınla" };
 
   const wanted = p.data.platforms;
-  // Atomic: the row set follows the selection, and the status only moves if the post is STILL editable
-  const moved = await prisma.$transaction(async (tx) => {
-    const { count } = await tx.post.updateMany({ where: editable, data: p.postFields });
+  try {
+    // Atomic: the row set follows the selection, and the status only moves if the post is STILL as editable as we read it
+    const moved = await prisma.$transaction(async (tx) => {
+      const { count } = await tx.post.updateMany({ where: editableAs(userId, postId, existing.status), data: p.postFields });
+      if (count !== 1) return false;
+
+      const published = failed ? (await tx.postPlatform.findMany({ where: { postId, status: "PUBLISHED" }, select: { platform: true } })).map((r) => r.platform) : [];
+      if (published.some((platform) => !wanted.includes(platform))) throw new EditRefused("Yayınlanmış bir platform çıkarılamaz");
+      if (failed && wanted.every((platform) => published.includes(platform))) throw new EditRefused("Yeniden denenecek platform kalmadı");
+
+      await tx.postPlatform.deleteMany({ where: { postId, platform: { notIn: wanted } } });
+      for (const platform of wanted) {
+        if (published.includes(platform)) continue; // already out: never rewritten, never sent twice
+        const row = p.platformRow(platform);
+        await tx.postPlatform.upsert({
+          where: { postId_platform: { postId, platform } },
+          create: { postId, ...row },
+          update: { socialAccountId: row.socialAccountId, text: row.text, mediaUrls: row.mediaUrls, ...(failed ? { status: "PENDING", error: null } : {}) },
+        });
+      }
+      return true;
+    });
+    return moved ? { ok: true, id: postId, mode: p.data.mode } : { ok: false, error: "Gönderi artık düzenlenemiyor" };
+  } catch (e) {
+    if (e instanceof EditRefused) return { ok: false, error: e.message };
+    throw e;
+  }
+}
+
+/**
+ * Sends a FAILED post again, as it is: now (`scheduledAt` null) or at a chosen future time. Only the failed platforms go back to
+ * PENDING; a platform that already published keeps its state and is never published again (the publisher only claims PENDING rows).
+ * One atomic update on the FAILED status, so a double click queues it once.
+ */
+export async function retryFailedPostForUser(
+  userId: string,
+  postId: string,
+  scheduledAt: string | null,
+): Promise<{ ok: true; mode: "now" | "schedule" } | { ok: false; error: string }> {
+  let when = new Date();
+  if (scheduledAt !== null) {
+    const parsed = scheduleTimeSchema.safeParse(scheduledAt);
+    if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Geçersiz tarih" };
+    when = new Date(parsed.data);
+  }
+
+  const queued = await prisma.$transaction(async (tx) => {
+    const { count } = await tx.post.updateMany({ where: { id: postId, userId, status: "FAILED" }, data: { status: "SCHEDULED", scheduledAt: when } });
     if (count !== 1) return false;
-    await tx.postPlatform.deleteMany({ where: { postId, platform: { notIn: wanted } } });
-    for (const platform of wanted) {
-      const row = p.platformRow(platform);
-      await tx.postPlatform.upsert({
-        where: { postId_platform: { postId, platform } },
-        create: { postId, ...row },
-        update: { socialAccountId: row.socialAccountId, text: row.text, mediaUrls: row.mediaUrls },
-      });
-    }
+    await tx.postPlatform.updateMany({ where: { postId, status: "FAILED" }, data: { status: "PENDING", error: null } });
     return true;
   });
-  return moved ? { ok: true, id: postId, mode: p.data.mode } : { ok: false, error: "Gönderi artık düzenlenemiyor" };
+  return queued ? { ok: true, mode: scheduledAt === null ? "now" : "schedule" } : { ok: false, error: "Gönderi bulunamadı ya da yeniden denenemiyor" };
 }
 
 /**

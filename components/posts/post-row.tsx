@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { STATUS_META } from "@/lib/format";
 import { isEditableStatus, type PostItem } from "@/lib/post-types";
 import { PlatformChip } from "@/components/platform/platform-icon";
-import { deletePostAction, reschedulePostAction } from "@/server/actions/posts";
+import { deletePostAction, reschedulePostAction, retryFailedPostAction } from "@/server/actions/posts";
 
 /** `2026-10-23T09:30` in the browser's own timezone, the format a datetime-local input wants. */
 function toLocalInput(d: Date): string {
@@ -41,12 +41,23 @@ export function PostRow({ post, whenLabel, quickReschedule = false }: { post: Po
     if (!whenDraft) return;
     setSaving(true);
     // The input is local wall time; toISOString converts it with the browser's offset
-    const r = await reschedulePostAction(post.id, new Date(whenDraft).toISOString());
+    const iso = new Date(whenDraft).toISOString();
+    // A failed post goes out again at that time (only its failed platforms); a scheduled one just moves
+    const r = post.status === "FAILED" ? await retryFailedPostAction(post.id, iso) : await reschedulePostAction(post.id, iso);
     setSaving(false);
     if (!r.ok) return toast.error(r.error);
-    toast.success("Yeni saate taşındı");
+    toast.success(post.status === "FAILED" ? "Yeniden denenecek" : "Yeni saate taşındı");
     setWhenDraft(null);
     router.refresh();
+  }
+
+  function retryNow() {
+    startTransition(async () => {
+      const r = await retryFailedPostAction(post.id, null);
+      if (!r.ok) return void toast.error(r.error);
+      toast.success("Yayın kuyruğa alındı");
+      router.refresh();
+    });
   }
 
   return (
@@ -78,16 +89,25 @@ export function PostRow({ post, whenLabel, quickReschedule = false }: { post: Po
           <p className="text-destructive line-clamp-2 text-xs">{post.error}</p>
         )}
 
-        {/* Quick reschedule: only for a scheduled post that has not gone out (the calendar asks for this) */}
-        {quickReschedule && post.status === "SCHEDULED" && (
+        {/* Quick actions: a scheduled post can move to another time, a failed one can be sent again now or at a chosen time */}
+        {(post.status === "FAILED" || (quickReschedule && post.status === "SCHEDULED")) && (
           whenDraft === null ? (
-            <button
-              type="button"
-              onClick={() => setWhenDraft(toLocalInput(post.scheduledAt))}
-              className="text-brand-mist text-xs font-medium hover:underline"
-            >
-              Saati değiştir
-            </button>
+            <div className="flex flex-wrap items-center gap-3">
+              {post.status === "FAILED" && (
+                <button type="button" disabled={pending} onClick={retryNow} className="text-brand-mist text-xs font-medium hover:underline disabled:opacity-50">
+                  Şimdi yeniden dene
+                </button>
+              )}
+              {quickReschedule && (
+                <button
+                  type="button"
+                  onClick={() => setWhenDraft(toLocalInput(post.status === "FAILED" ? new Date(Date.now() + 3600_000) : post.scheduledAt))}
+                  className="text-brand-mist text-xs font-medium hover:underline"
+                >
+                  {post.status === "FAILED" ? "Yeni saatte dene" : "Saati değiştir"}
+                </button>
+              )}
+            </div>
           ) : (
             <div className="flex flex-wrap items-center gap-2 pt-1">
               <input
