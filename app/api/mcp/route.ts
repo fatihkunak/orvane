@@ -1,6 +1,6 @@
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
-import { verifyApiToken } from "@/lib/api-tokens";
-import { takeToken } from "@/lib/ai/rate-limit";
+import { looksLikeToken, verifyApiToken } from "@/lib/api-tokens";
+import { isLimited, takeToken } from "@/lib/ai/rate-limit";
 import { createMcpServer } from "@/lib/mcp/server";
 
 /**
@@ -11,6 +11,8 @@ import { createMcpServer } from "@/lib/mcp/server";
 export const dynamic = "force-dynamic";
 
 const RATE = { count: 120, windowMs: 60_000 };
+/** Failed authentications per client before it is refused outright. Generous: a misconfigured client retries a few times at most. */
+const FAILURES = { count: 30, windowMs: 10 * 60_000 };
 
 const jsonError = (status: number, message: string, headers: Record<string, string> = {}) =>
   Response.json({ jsonrpc: "2.0", error: { code: -32000, message }, id: null }, { status, headers });
@@ -28,8 +30,22 @@ export async function POST(req: Request): Promise<Response> {
 
   const header = req.headers.get("authorization") ?? "";
   const token = header.toLowerCase().startsWith("bearer ") ? header.slice(7).trim() : "";
-  const who = token ? await verifyApiToken(token) : null;
-  if (!who) return jsonError(401, "Missing, invalid or revoked token", { "WWW-Authenticate": 'Bearer realm="mcp"' });
+
+  // A flood of bad tokens must not become a flood of queries: a client that keeps failing is stopped BEFORE the lookup, and a
+  // token that cannot be real by its shape never reaches the database. Only failures count, so valid use is never limited. The
+  // address comes from Cloudflare (`cf-connecting-ip`, not forgeable through the tunnel); a direct caller could forge it.
+  const client = req.headers.get("cf-connecting-ip") ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const failKey = `mcp-fail:${client}`;
+  const blocked = isLimited(failKey, FAILURES.count, FAILURES.windowMs);
+  if (blocked.limited) {
+    return jsonError(429, `Too many failed attempts, retry in ${blocked.retryAfterSec}s`, { "Retry-After": String(blocked.retryAfterSec) });
+  }
+
+  const who = looksLikeToken(token) ? await verifyApiToken(token) : null;
+  if (!who) {
+    takeToken(failKey, FAILURES.count, FAILURES.windowMs);
+    return jsonError(401, "Missing, invalid or revoked token", { "WWW-Authenticate": 'Bearer realm="mcp"' });
+  }
 
   const limit = takeToken(`mcp:${who.tokenId}`, RATE.count, RATE.windowMs);
   if (!limit.ok) return jsonError(429, `Too many requests, retry in ${limit.retryAfterSec}s`, { "Retry-After": String(limit.retryAfterSec) });

@@ -6,6 +6,7 @@
 - `token-refresh-race.test.ts`: GERÇEK DB + X gibi davranan sahte sağlayıcı (tek kullanımlık refresh token, yavaş yanıt); 3 eşzamanlı `getAccessToken` → tek yenileme, hepsi yeni token alır; gerçek ret → yine `ReconnectRequiredError`.
 - `upload-cap.test.ts`: başlıksız (chunked) 8 MB gövde → 413 ve gövdenin yarısından azı okunur (tam tamponlanmaz); normal küçük yükleme 200.
 - `ssrf-rebinding.test.ts`: yerel sunucu + `dns.lookup` taklidi; düz `fetch` rebinding'e AÇIK (kanıt), `guardedFetch` bağlantı anında engeller (iç ve karışık genel+iç cevap), `ALLOW_PRIVATE_LLM_URLS=1` ile yerel geliştirme çalışır.
+- `mcp-failures.test.ts`: biçimi bozuk token'lar `verifyApiToken`'a (DB) hiç gitmez; başarısız denemeler 30'dan sonra 429 ve sorgu durur; başka istemci ve geçerli token etkilenmez; başarılı istekler sayılmaz.
 - `publishing.test.ts`: GERÇEK DB; tam yayın, eşzamanlı iki koşuda tek gönderim, kısmi hata, token yenileme+rotasyon, ölü token, Threads adımları, bayat claim.
 - `oauth-flow.test.ts`: GERÇEK DB; state/PKCE/çerez, CSRF reddi, başka kullanıcı/çerezsiz tekrar, reddetme, şifreli kayıt, yeniden bağlamada upsert.
 

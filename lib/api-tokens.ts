@@ -11,7 +11,12 @@ export const MAX_ACTIVE_TOKENS = 10;
 /** `lastUsedAt` is written at most this often, so a busy client does not write on every call */
 const LAST_USED_GRANULARITY_MS = 60_000;
 
-export const hashToken = (token: string) => createHash("sha256").update(token).digest("hex");
+/** `orv_` + 32 random bytes as base64url (43 characters, no padding): the only shape a real token can have. */
+const TOKEN_SHAPE = /^orv_[A-Za-z0-9_-]{43}$/;
+/** Cheap, database-free check, so junk presented as a token never costs a query. */
+export const looksLikeToken = (presented: string) => TOKEN_SHAPE.test(presented);
+
+export const hashToken =(token: string) => createHash("sha256").update(token).digest("hex");
 
 export interface ApiTokenView {
   id: string;
@@ -48,7 +53,7 @@ export async function revokeApiToken(userId: string, id: string): Promise<boolea
 
 /** The user a presented token belongs to, or null (unknown, revoked, or the user is suspended). */
 export async function verifyApiToken(presented: string, now = new Date()): Promise<{ userId: string; tokenId: string } | null> {
-  if (!presented.startsWith(TOKEN_PREFIX) || presented.length > 200) return null;
+  if (!looksLikeToken(presented)) return null;
   const row = await prisma.apiToken.findUnique({
     where: { tokenHash: hashToken(presented) },
     select: { id: true, userId: true, revokedAt: true, lastUsedAt: true, user: { select: { suspendedAt: true } } },

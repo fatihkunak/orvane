@@ -41,6 +41,13 @@ export function takeToken(key: string, limit: number, windowMs: number, now = Da
   return { ok: true };
 }
 
+/** Whether `key` has already used up `limit` hits in the window, WITHOUT counting this call (for "only failures count" limits). */
+export function isLimited(key: string, limit: number, windowMs: number, now = Date.now()): { limited: false } | { limited: true; retryAfterSec: number } {
+  const recent = (hits.get(key)?.times ?? []).filter((t) => now - t < windowMs);
+  if (recent.length < limit) return { limited: false };
+  return { limited: true, retryAfterSec: Math.max(1, Math.ceil((recent[0]! + windowMs - now) / 1000)) };
+}
+
 /** For tests */
 export function resetRateLimits(): void {
   hits.clear();
