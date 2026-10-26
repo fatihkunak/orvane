@@ -70,7 +70,7 @@ export function Topbar({ user, notifications, hasFailure, signOutAction }: Topba
                 <DropdownMenuItem
                   key={`${n.kind}-${n.id}`}
                   className="items-start gap-2 py-2"
-                  render={<Link href={n.kind === "failed" ? `/posts/${n.id}/edit` : "/calendar"} />}
+                  render={<Link href="/calendar" />}
                 >
                   {n.kind === "failed" ? (
                     <AlertTriangle className="text-destructive mt-0.5 size-4 shrink-0" />

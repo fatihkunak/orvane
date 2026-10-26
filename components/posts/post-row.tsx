@@ -8,7 +8,7 @@ import { ImageIcon, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { STATUS_META } from "@/lib/format";
-import type { PostItem } from "@/lib/post-types";
+import { isEditableStatus, type PostItem } from "@/lib/post-types";
 import { PlatformChip } from "@/components/platform/platform-icon";
 import { deletePostAction, reschedulePostAction } from "@/server/actions/posts";
 
@@ -26,8 +26,8 @@ export function PostRow({ post, whenLabel, quickReschedule = false }: { post: Po
   const [whenDraft, setWhenDraft] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const deletable = post.status !== "PUBLISHED";
-  // Anything not sent yet can be opened in the form (a scheduled post can be rewritten or unscheduled there)
-  const editable = post.status !== "PUBLISHED";
+  // A draft or scheduled post can be opened in the form (rewritten or unscheduled there); a failed one cannot (404)
+  const editable = isEditableStatus(post.status);
 
   function remove() {
     startTransition(async () => {

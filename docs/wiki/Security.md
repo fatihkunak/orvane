@@ -21,5 +21,7 @@ Güvenlik kararları tek yerde: başlıklar, hız sınırları, sırlar ve rapor
 - **Yükleme doğrulaması:** MIME + **magic bytes**, tür/boyut sınırları, UUID dosya adı, `nosniff` ile servis.
 - **Yıkıcı işlemler:** hesap silme e-postayla onaylanır (istemci + sunucu), güncelleme sahip e-postasıyla sınırlı, MCP `publish_now` `confirm: true` olmadan çalışmaz.
 - **Bağımlılıklar:** `npm audit --omit=dev` temiz. Geliştirme ağacındaki `braces` uyarısı yamasız (npm'de yeni sürüm yok) ve yalnız `shadcn` CLI'den geliyor; üretim ağacına girmez.
+- **Sertleştirme turu (2026-10-26):** dış çağrılarda (`downloadMedia`, `lib/ai/client.ts`, `lib/ai/image.ts`) yönlendirme takip edilmez (`redirect: manual|error`; 3xx kalıcı hata) — izinli adres iç adrese sıçratamaz, `x-api-key` yönlendirmeyle sızmaz. Sağlayıcı yanıt gövdesi `readCapped` ile sınırlı. `fence()` kullanıcı metninin prompt etiketlerini kapatmasını önler. `adminGuard` istemci adresinden bağımsız genel bir başarısız-deneme kovasına sahip (10 dk'da 100); `takeToken` süresi dolan anahtarları siler ve 20.000 anahtarla sınırlıdır. Upload `Content-Length` ön kontrolü yapar. Inngest adım çıktısına token yazılmaz.
+- **Bilinen açık sınırlar:** chunked (Content-Length'siz) upload gövdesi hâlâ tamponlanır; DNS rebinding `assertSafeBaseUrl` ile kapanmaz (IP sabitleme gerekir); `/api/mcp` geçersiz belirteç istekleri hız sınırına girmez (256 bit belirteç, yalnız DB yükü); X token yenileme yarışı kilitsiz; hız sınırlayıcı süreç içi (tek instance varsayımı).
 
 Bkz. [[Auth]], [[Media]], [[Mcp]], [[Settings]], [[Tests]].

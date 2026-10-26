@@ -4,6 +4,22 @@ Bu dosya [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) biçimini izle
 
 ## [Unreleased]
 
+### Düzeltilen
+
+- **Takvim:** 500'den fazla tarihli gönderisi olan kullanıcıda yaklaşan gönderiler listeden düşüyordu.
+- **Düzenleme formu:** zamanlanmış gönderi açılınca saat "şimdi + 1 saat"e kayıyordu; artık gönderinin kendi saatiyle açılır.
+- **404:** başarısız gönderinin bildirimi ve takvim satırındaki kalem, düzenlenemeyen gönderiye götürüyordu. Bildirim takvime gider, kalem yalnız taslak ve zamanlanmış gönderide görünür.
+- **Yayın hattı:** geçici token yenileme hatası (ağ, 5xx, 429) gönderiyi kalıcı FAILED yapıyordu, artık yeniden denenir. Düz metin token Inngest adım çıktısına yazılmıyor.
+- **X karakter sayımı:** URL 23, emoji ve CJK 2 sayılır (twitter-text ağırlıkları).
+
+### Güvenlik
+
+- Medya indirme ve yapay zekâ sağlayıcı isteklerinde yönlendirme takibi kapatıldı (SSRF, `x-api-key` sızıntısı).
+- Sağlayıcı yanıt gövdesine boyut sınırı; eksik özel IP aralıkları (`198.18.0.0/15`, `192.0.0.0/24`, çok noktaya yayın, `fec0::/10`, NAT64) eklendi.
+- Kullanıcı metni prompt etiketlerini (`</brief>`, `</text>`, `<task>`, `<rules>`) kapatıp talimat enjekte edemez.
+- Yönetim API'sinin başarısız-deneme sınırı sahte `X-Forwarded-For` ile atlatılamaz; hız sınırlayıcı bellek sızıntısı kapandı.
+- Yükleme: `Content-Length` izin verilen en büyük dosyayı aşıyorsa gövde belleğe alınmadan 413.
+
 ## [0.1.0] — 2026-10-22
 
 İlk sürüm: tek içerik, üç platform (X, LinkedIn, Threads).

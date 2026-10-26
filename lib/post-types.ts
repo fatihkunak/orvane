@@ -17,4 +17,10 @@ export type PostItem = {
 /** Serializable form passed from server components to client components. */
 export type PostDTO = Omit<PostItem, "scheduledAt"> & { scheduledAt: string };
 
-export const hydratePost = (d: PostDTO): PostItem => ({ ...d, scheduledAt: new Date(d.scheduledAt) });
+/**
+ * The edit form (`getPostForForm`) only opens a DRAFT or a SCHEDULED post; a FAILED, PUBLISHING or PUBLISHED one is a 404,
+ * so no list or notification may link to it.
+ */
+export const isEditableStatus = (status: PostStatus): boolean => status === "DRAFT" || status === "SCHEDULED";
+
+export const hydratePost =(d: PostDTO): PostItem => ({ ...d, scheduledAt: new Date(d.scheduledAt) });
