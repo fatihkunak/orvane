@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { ALLOWED_MEDIA_TYPES } from "@/lib/media";
+import { ALLOWED_MEDIA_TYPES, MAX_VIDEO_BYTES } from "@/lib/media";
 import { storeMediaBytes } from "@/lib/media-store";
 import { takeToken } from "@/lib/ai/rate-limit";
 
@@ -22,6 +22,12 @@ export async function POST(req: Request) {
       { error: `Çok fazla yükleme. ${limit.retryAfterSec} sn sonra tekrar dene.` },
       { status: 429, headers: { "Retry-After": String(limit.retryAfterSec) } },
     );
+  }
+
+  // Refuse an oversized body before it is buffered into memory (multipart overhead gets a small allowance)
+  const declared = Number(req.headers.get("content-length"));
+  if (Number.isFinite(declared) && declared > MAX_VIDEO_BYTES + 1024 * 1024) {
+    return Response.json({ error: "Dosya çok büyük" }, { status: 413 });
   }
 
   const form = await req.formData().catch(() => null);

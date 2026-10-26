@@ -9,6 +9,7 @@ import { takeToken } from "@/lib/ai/rate-limit";
  */
 export const MIN_ADMIN_TOKEN_LENGTH = 32;
 const FAILURES = { count: 10, windowMs: 10 * 60_000 };
+const GLOBAL_FAILURES = { count: 100, windowMs: 10 * 60_000 };
 
 const sha = (s: string) => createHash("sha256").update(s).digest();
 
@@ -25,7 +26,11 @@ export function adminGuard(req: Request, env: NodeJS.ProcessEnv = process.env): 
   // Compare fixed-length digests in constant time (no early exit on length or first differing byte)
   if (presented && timingSafeEqual(sha(presented), sha(secret))) return null;
 
+  // The client address comes from a header a direct caller can forge, so a per-client bucket alone can be dodged by rotating
+  // it; a global bucket caps failed attempts no matter what the header says.
   const t = takeToken(`admin-fail:${client}`, FAILURES.count, FAILURES.windowMs);
   if (!t.ok) return json(429, "Too many failed attempts", { "Retry-After": String(t.retryAfterSec) });
+  const g = takeToken("admin-fail:*", GLOBAL_FAILURES.count, GLOBAL_FAILURES.windowMs);
+  if (!g.ok) return json(429, "Too many failed attempts", { "Retry-After": String(g.retryAfterSec) });
   return json(401, "Unauthorized", { "WWW-Authenticate": "Bearer" });
 }
