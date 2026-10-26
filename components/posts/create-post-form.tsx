@@ -97,16 +97,15 @@ export function CreatePostForm({ connected, aiProviders, initial }: { connected:
   );
   const [uploading, setUploading] = useState(0);
   const [when, setWhen] = useState<When>("schedule");
-  // Default schedule: next full hour, in the browser's timezone
-  const [date, setDate] = useState(() => {
-    const d = new Date(Date.now() + 3600_000);
-    return toDateInput(d);
-  });
-  const [time, setTime] = useState(() => {
+  // Default schedule: next full hour, in the browser's timezone. A scheduled post being edited keeps its own time.
+  const [defaultAt] = useState(() => {
+    if (initial?.scheduledAt) return new Date(initial.scheduledAt);
     const d = new Date(Date.now() + 3600_000);
     d.setMinutes(0);
-    return toTimeInput(d);
+    return d;
   });
+  const [date, setDate] = useState(() => toDateInput(defaultAt));
+  const [time, setTime] = useState(() => toTimeInput(defaultAt));
   const [previewOf, setPreviewOf] = useState<Platform | null>(null);
 
   const hasAccounts = Object.keys(connected).length > 0;
