@@ -112,7 +112,10 @@ async function publishTo(step: Step, target: PublishTarget, input: { text: strin
  */
 export const refreshTokens = inngest.createFunction(
   { id: "refresh-expiring-tokens", triggers: [{ cron: "0 3 * * *" }] },
-  async ({ step }) => {
+  ({ step }) => refreshTokensHandler({ step }),
+);
+
+export async function refreshTokensHandler({ step }: { step: Pick<Step, "run"> }) {
     const ids = await step.run("find-expiring", async () => {
       const rows = await prisma.socialAccount.findMany({
         where: { expiresAt: { lt: new Date(Date.now() + 7 * 24 * 60 * 60_000), gt: new Date() } },
@@ -124,15 +127,17 @@ export const refreshTokens = inngest.createFunction(
     let failed = 0;
     for (const id of ids) {
       try {
-        await step.run(`refresh-${id}`, () => getAccessToken(id)); // refreshes when due
+        // Step output is persisted in Inngest's run state: return nothing, never the access token
+        await step.run(`refresh-${id}`, async () => {
+          await getAccessToken(id); // refreshes when due
+        });
       } catch (e) {
         failed++;
         console.warn(`token refresh failed for ${id}`, e);
       }
     }
     return { checked: ids.length, failed };
-  },
-);
+}
 
 /**
  * Daily: remove leftover local uploads -- files nothing references and that are older than a day. The age guard keeps a file that
