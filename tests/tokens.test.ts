@@ -18,7 +18,10 @@ const account = {
 const db = vi.hoisted(() => ({ findUniqueOrThrow: vi.fn(), findMany: vi.fn(), update: vi.fn() }));
 const refresh = vi.hoisted(() => ({ refreshTokenSet: vi.fn() }));
 
-vi.mock("@/lib/prisma", () => ({ prisma: { socialAccount: db } }));
+// The refresh runs inside a transaction (advisory lock); here the "transaction" just hands the same fakes to the callback
+vi.mock("@/lib/prisma", () => ({
+  prisma: { socialAccount: db, $transaction: async (fn: (tx: unknown) => unknown) => fn({ socialAccount: db, $executeRaw: vi.fn() }) },
+}));
 vi.mock("@/lib/social/app-credentials", () => ({ resolveCredentials: vi.fn(async () => ({ clientId: "c", clientSecret: "s" })) }));
 vi.mock("@/lib/social/providers", async (orig) => ({ ...(await orig<typeof import("@/lib/social/providers")>()), refreshTokenSet: refresh.refreshTokenSet }));
 

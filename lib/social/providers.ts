@@ -135,11 +135,18 @@ export function buildAuthorizeUrl(
 // Token endpoints
 // ---------------------------------------------------------------------------
 
+/**
+ * Provider calls must not hang: a token refresh runs under a per-account lock (see tokens.ts), so a stuck request would
+ * block every other job of that account. Must stay below the lock transaction's own timeout.
+ */
+const OAUTH_TIMEOUT_MS = 15_000;
+
 async function postForm(url: string, body: Record<string, string>, headers: Record<string, string> = {}) {
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json", ...headers },
     body: new URLSearchParams(body),
+    signal: AbortSignal.timeout(OAUTH_TIMEOUT_MS),
   });
   const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;
   if (!res.ok) {
@@ -268,7 +275,7 @@ export async function refreshTokenSet(
 // ---------------------------------------------------------------------------
 
 async function getJson(url: string, headers: Record<string, string> = {}) {
-  const res = await fetch(url, { headers: { Accept: "application/json", ...headers } });
+  const res = await fetch(url, { headers: { Accept: "application/json", ...headers }, signal: AbortSignal.timeout(OAUTH_TIMEOUT_MS) });
   const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;
   if (!res.ok) {
     const err = json.error as { message?: string } | string | undefined;
