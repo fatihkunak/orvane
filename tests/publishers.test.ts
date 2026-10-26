@@ -273,3 +273,14 @@ describe("Threads publisher", () => {
     await expect(publishThreadsContainer(ctx, "c1", bad.deps)).rejects.toMatchObject({ retryable: false });
   });
 });
+
+describe("media download (SSRF)", () => {
+  const url = "/api/media/00000000-0000-4000-8000-00000000000a.png";
+
+  it("never follows redirects: an allowed URL must not bounce the server to an internal address", async () => {
+    const { deps, calls } = mock(() => new Response(null, { status: 302, headers: { location: "http://169.254.169.254/latest/meta-data/" } }));
+    await expect(publishToTwitter(ctx, { text: "x", mediaUrls: [url] }, deps)).rejects.toMatchObject({ retryable: false });
+    expect(calls).toHaveLength(1);
+    expect(calls[0].init.redirect).toBe("manual");
+  });
+});

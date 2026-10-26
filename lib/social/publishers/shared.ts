@@ -42,7 +42,9 @@ export type MediaFile = { bytes: Uint8Array; contentType: string; kind: MediaKin
 export async function downloadMedia(url: string, deps: Deps): Promise<MediaFile> {
   // Defence in depth: the post schema already enforces this, but rows may predate a rule change
   if (!isAllowedMediaUrl(url)) throw new PublishError(`Geçersiz medya adresi: ${url}`, false);
-  const res = await deps.fetch(absoluteMediaUrl(url));
+  // Never follow redirects: an allowed URL must not be able to bounce this server to an internal address
+  const res = await deps.fetch(absoluteMediaUrl(url), { redirect: "manual" });
+  if (res.status >= 300 && res.status < 400) throw new PublishError(`Medya adresi yönlendirme döndürdü (${res.status}): ${url}`, false);
   if (!res.ok) throw new PublishError(`Medya indirilemedi (${res.status}): ${url}`, res.status >= 500);
   const bytes = new Uint8Array(await res.arrayBuffer());
   const header = res.headers.get("content-type")?.split(";")[0];

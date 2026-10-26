@@ -2,7 +2,7 @@ import "server-only";
 import { decrypt, encrypt } from "@/lib/crypto";
 import { prisma } from "@/lib/prisma";
 import { resolveCredentials } from "@/lib/social/app-credentials";
-import { providerFor, refreshTokenSet, type TokenSet } from "@/lib/social/providers";
+import { OAuthError, providerFor, refreshTokenSet, type TokenSet } from "@/lib/social/providers";
 
 /** Thrown when a token is dead and only the user can fix it by connecting the account again. */
 export class ReconnectRequiredError extends Error {
@@ -66,7 +66,12 @@ export async function getAccessToken(accountId: string): Promise<{ accessToken: 
       const latest = await prisma.socialAccount.findUniqueOrThrow({ where: { id: accountId } });
       const rotatedByOther = latest.updatedAt.getTime() !== account.updatedAt.getTime();
       if (rotatedByOther) account = latest;
-      else if (expired) throw new ReconnectRequiredError(provider.label);
+      else if (expired) {
+        // Only a provider rejection (4xx) means the user must reconnect; network errors and 5xx stay retryable
+        const rejected = e instanceof OAuthError && e.status >= 400 && e.status < 500 && e.status !== 429;
+        if (rejected) throw new ReconnectRequiredError(provider.label);
+        throw e;
+      }
       else console.warn(`token refresh failed for ${provider.label}, using the current token`, e);
     }
   } else if (expired) {
