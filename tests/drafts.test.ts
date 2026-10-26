@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { encrypt } from "@/lib/crypto";
 import { createPostForUser, reschedulePostForUser, updateDraftForUser } from "@/lib/post-create";
 import type { CreatePostInput } from "@/lib/validation/post";
-import { getPostForForm, listDrafts } from "@/lib/queries/posts";
+import { getPostForForm, listDatedPosts, listDrafts } from "@/lib/queries/posts";
 import { findDuePostIds, loadPublishJob, mediaFor } from "@/lib/publishing";
 
 /** Integration tests against the local Postgres: every row hangs off throw-away users, cleanup is a cascading delete. */
@@ -78,6 +78,26 @@ describe("drafts list and form data", () => {
     const a = await createPostForUser(userId, { text: "", platforms: ["TWITTER", "LINKEDIN"], overrides: { TWITTER: "x metni", LINKEDIN: "li metni" }, mediaUrls: [], mode: "draft" });
     if (!a.ok) throw new Error("setup");
     expect((await getPostForForm(userId, a.id))!.text).toBe("");
+  });
+});
+
+describe("query scoping and limits", () => {
+  it("keeps the newest dated posts when the take limit cuts the list", async () => {
+    const t = (h: number) => new Date(Date.now() + h * 3600_000);
+    for (const h of [-5, 2, 3]) await prisma.post.create({ data: { userId, text: `p${h}`, status: "SCHEDULED", scheduledAt: t(h) } });
+    await prisma.post.create({ data: { userId: otherId, text: "baskasi", status: "SCHEDULED", scheduledAt: t(4) } });
+    const list = await listDatedPosts(userId, { take: 2 });
+    // the two latest, still in ascending order, and never another user's post
+    expect(list.map((p) => p.text)).toEqual(["p2", "p3"]);
+  });
+
+  it("hands the form the scheduled time so saving does not silently move it", async () => {
+    const at = new Date(Date.now() + 5 * 3600_000);
+    const a = await draft();
+    if (!a.ok) throw new Error("setup");
+    expect((await getPostForForm(userId, a.id))!.scheduledAt).toBeNull();
+    await prisma.post.update({ where: { id: a.id }, data: { status: "SCHEDULED", scheduledAt: at } });
+    expect((await getPostForForm(userId, a.id))!.scheduledAt).toBe(at.toISOString());
   });
 });
 

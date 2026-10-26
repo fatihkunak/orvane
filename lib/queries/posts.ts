@@ -9,9 +9,11 @@ export async function listDatedPosts(userId: string, opts: { take?: number } = {
   const posts = await prisma.post.findMany({
     where: { userId, scheduledAt: { not: null } },
     include: { platforms: { select: { platform: true, error: true, mediaUrls: true } } },
-    orderBy: { scheduledAt: "asc" },
+    // Newest first so the limit cuts off the oldest posts, never the upcoming ones; flipped back to ascending below
+    orderBy: { scheduledAt: "desc" },
     take: opts.take ?? 500,
   });
+  posts.reverse();
 
   return posts.map((p) => {
     // Thumbnail: the first IMAGE (shared media wins, otherwise a platform's own) -- videos show the icon instead
@@ -78,6 +80,8 @@ export interface DraftForm {
   mediaByPlatform: Partial<Record<Platform, string[]>>;
   /** DRAFT = plain draft; SCHEDULED = still in the future, so it can be changed or unscheduled */
   status: "DRAFT" | "SCHEDULED";
+  /** ISO time of a scheduled post, so the form opens on it instead of a fresh default; null for drafts */
+  scheduledAt: string | null;
 }
 
 /**
@@ -106,5 +110,6 @@ export async function getPostForForm(userId: string, id: string): Promise<DraftF
     mediaUrls: p.mediaUrls,
     mediaByPlatform,
     status: p.status === "SCHEDULED" ? "SCHEDULED" : "DRAFT",
+    scheduledAt: p.status === "SCHEDULED" && p.scheduledAt ? p.scheduledAt.toISOString() : null,
   };
 }
