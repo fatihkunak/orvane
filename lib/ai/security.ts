@@ -6,7 +6,8 @@ import { AiError } from "@/lib/ai/errors";
  * Letting the server call an address the user typed is SSRF (internal network, cloud metadata). Only https and public IPs
  * pass. `ALLOW_PRIVATE_LLM_URLS=1` is for local development with Ollama, LM Studio or llama.cpp ONLY: anyone who can sign in
  * to the app could aim the server at your local services while it is on, so leave it off on anything reachable from outside.
- * Note: DNS rebinding is not fully closed by this check.
+ * This check alone does not stop DNS rebinding (the name can resolve differently when the connection is made); provider
+ * calls therefore go through `guardedFetch` (`safe-fetch.ts`), which checks the address on the connection itself.
  */
 export const allowPrivateUrls = () => process.env.ALLOW_PRIVATE_LLM_URLS === "1";
 

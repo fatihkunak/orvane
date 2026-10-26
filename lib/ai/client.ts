@@ -1,5 +1,6 @@
 import { AiError } from "@/lib/ai/errors";
 import { authHeaders, type ProviderInfo, type ProviderKind } from "@/lib/ai/providers";
+import { guardedFetch } from "@/lib/ai/safe-fetch";
 import { redact } from "@/lib/ai/security";
 import { stripThinking } from "@/lib/ai/text";
 
@@ -22,7 +23,7 @@ export const PROBE_TIMEOUT_MS = 20_000;
 const timedWith =
   (ms: number): FetchLike =>
   (url, init) =>
-    fetch(url, { ...init, signal: AbortSignal.timeout(ms) });
+    guardedFetch(url, { ...init, signal: AbortSignal.timeout(ms) });
 const timed = timedWith(REQUEST_TIMEOUT_MS);
 const probeTimed = timedWith(PROBE_TIMEOUT_MS);
 

@@ -1,6 +1,7 @@
 import { classifyHttpError, readCapped, type Creds, type FetchLike } from "@/lib/ai/client";
 import { AiError } from "@/lib/ai/errors";
 import { authHeaders } from "@/lib/ai/providers";
+import { guardedFetch } from "@/lib/ai/safe-fetch";
 import { redact } from "@/lib/ai/security";
 import { ALLOWED_MEDIA_TYPES, MAX_IMAGE_BYTES } from "@/lib/media";
 import { IMAGE_SIZES, IMAGE_TIMEOUT_MS, MAX_IMAGE_PROMPT_CHARS, type ImageSize } from "@/lib/ai/image-meta";
@@ -77,7 +78,7 @@ export async function generateImage(
   if (!p) throw new AiError("BAD_REQUEST", "Görsel istemi boş olamaz.");
   if (p.length > MAX_IMAGE_PROMPT_CHARS) throw new AiError("BAD_REQUEST", `Görsel istemi en fazla ${MAX_IMAGE_PROMPT_CHARS} karakter olabilir.`);
 
-  const fetchImpl = opts.fetchImpl ?? ((url, init) => fetch(url, { ...init, signal: AbortSignal.timeout(opts.timeoutMs ?? IMAGE_TIMEOUT_MS) }));
+  const fetchImpl = opts.fetchImpl ?? ((url, init) => guardedFetch(url, { ...init, signal: AbortSignal.timeout(opts.timeoutMs ?? IMAGE_TIMEOUT_MS) }));
   let res: Response;
   try {
     res = await fetchImpl(imagesUrl(c), {

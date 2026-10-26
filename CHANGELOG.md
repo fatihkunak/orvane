@@ -17,6 +17,7 @@ Bu dosya [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) biçimini izle
 - X token yenileme yarışı kapandı: yenileme hesap başına Postgres advisory lock ile serileştirilir; eşzamanlı işler tek kullanımlık refresh token'ı iki kez göndermez, kaybeden iş artık yanlışlıkla "hesabı yeniden bağla" hatası almaz. OAuth çağrılarına 15 sn zaman aşımı.
 - Medya indirme ve yapay zekâ sağlayıcı isteklerinde yönlendirme takibi kapatıldı (SSRF, `x-api-key` sızıntısı).
 - Sağlayıcı yanıt gövdesine boyut sınırı; eksik özel IP aralıkları (`198.18.0.0/15`, `192.0.0.0/24`, çok noktaya yayın, `fec0::/10`, NAT64) eklendi.
+- DNS rebinding kapandı: yapay zekâ sağlayıcı çağrıları bağlantı anında çözülen adresi doğrulayan `guardedFetch` ile yapılır (yeni açık bağımlılık: `undici`).
 - Kullanıcı metni prompt etiketlerini (`</brief>`, `</text>`, `<task>`, `<rules>`) kapatıp talimat enjekte edemez.
 - Yönetim API'sinin başarısız-deneme sınırı sahte `X-Forwarded-For` ile atlatılamaz; hız sınırlayıcı bellek sızıntısı kapandı.
 - Yükleme: `Content-Length` izin verilen en büyük dosyayı aşıyorsa gövde belleğe alınmadan 413; başlık yoksa (chunked) ya da yalansa gövde akarken sayılır ve sınırı geçince kesilir.
