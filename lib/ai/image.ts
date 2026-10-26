@@ -1,4 +1,4 @@
-import { classifyHttpError, type Creds, type FetchLike } from "@/lib/ai/client";
+import { classifyHttpError, readCapped, type Creds, type FetchLike } from "@/lib/ai/client";
 import { AiError } from "@/lib/ai/errors";
 import { authHeaders } from "@/lib/ai/providers";
 import { redact } from "@/lib/ai/security";
@@ -82,6 +82,7 @@ export async function generateImage(
   try {
     res = await fetchImpl(imagesUrl(c), {
       method: "POST",
+      redirect: "error",
       headers: { "content-type": "application/json", ...authHeaders(c.info, c.apiKey) },
       body: JSON.stringify(imageRequestBody(c.model, p, opts.size)),
     });
@@ -92,7 +93,8 @@ export async function generateImage(
     }
     throw new AiError("PROVIDER", `Sağlayıcıya ulaşılamadı: ${redact((e as Error)?.message ?? "bağlantı hatası", c.apiKey)}`);
   }
-  const text = await res.text();
+  // base64 is ~4/3 of the bytes; allow that plus JSON overhead, refuse anything beyond
+  const text = await readCapped(res, Math.ceil((MAX_IMAGE_BYTES * 4) / 3) + 64 * 1024);
   if (!res.ok) throw classifyHttpError(res.status, text, res.headers, c.apiKey);
   let body: unknown;
   try {

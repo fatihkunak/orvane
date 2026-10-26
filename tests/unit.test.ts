@@ -44,9 +44,9 @@ describe("crypto", () => {
 });
 
 describe("character limits", () => {
-  it("counts Threads emoji by UTF-8 bytes (docs) but X by code points", () => {
+  it("counts Threads emoji by UTF-8 bytes (docs) but X emoji as 2", () => {
     expect(countChars("THREADS", "a🚀")).toBe(1 + 4);
-    expect(countChars("TWITTER", "a🚀")).toBe(2);
+    expect(countChars("TWITTER", "a🚀")).toBe(3);
   });
 
   it("reports which platforms are over", () => {

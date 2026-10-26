@@ -121,10 +121,43 @@ export function classifyHttpError(status: number, bodyText: string, headers: Hea
   return new AiError("PROVIDER", `Sağlayıcı hatası (${text})`);
 }
 
+/** Chat/model-list answers are small; anything above this is not a real provider answer. */
+export const MAX_RESPONSE_BYTES = 4 * 1024 * 1024;
+
+/**
+ * Reads a response body but gives up above `maxBytes` (declared length first, then while streaming), so a hostile or broken
+ * endpoint cannot make the server buffer an unbounded answer.
+ */
+export async function readCapped(res: Response, maxBytes: number): Promise<string> {
+  const declared = Number(res.headers.get("content-length"));
+  const tooBig = () => new AiError("BAD_OUTPUT", `Sağlayıcı yanıtı çok büyük (en fazla ${Math.round(maxBytes / 1024 / 1024)} MB).`);
+  if (Number.isFinite(declared) && declared > maxBytes) {
+    await res.body?.cancel().catch(() => undefined);
+    throw tooBig();
+  }
+  if (!res.body) return res.text();
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  let total = 0;
+  let out = "";
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > maxBytes) {
+      await reader.cancel().catch(() => undefined);
+      throw tooBig();
+    }
+    out += dec.decode(value, { stream: true });
+  }
+  return out + dec.decode();
+}
+
 async function request(url: string, init: RequestInit, c: Creds, fetchImpl: FetchLike): Promise<unknown> {
   let res: Response;
   try {
-    res = await fetchImpl(url, init);
+    // redirect:"error": a public host must not be able to bounce the call (and the key header) to an internal address
+    res = await fetchImpl(url, { ...init, redirect: "error" });
   } catch (e) {
     const name = (e as Error)?.name;
     if (name === "TimeoutError" || name === "AbortError") {
@@ -132,7 +165,7 @@ async function request(url: string, init: RequestInit, c: Creds, fetchImpl: Fetc
     }
     throw new AiError("PROVIDER", `Sağlayıcıya ulaşılamadı: ${redact((e as Error)?.message ?? "bağlantı hatası", c.apiKey)}`);
   }
-  const text = await res.text();
+  const text = await readCapped(res, MAX_RESPONSE_BYTES);
   if (!res.ok) throw classifyHttpError(res.status, text, res.headers, c.apiKey);
   try {
     return JSON.parse(text);

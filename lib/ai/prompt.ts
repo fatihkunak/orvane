@@ -107,6 +107,9 @@ function platformNotes(platforms: readonly Platform[]): string[] {
   return notes;
 }
 
+/** User text is data: it must not be able to close or reopen the blocks that fence it. */
+const fence = (t: string | undefined) => (t ?? "").replace(/<(\/?)(brief|text|task|rules)(?![a-z])/gi, "&lt;$1$2");
+
 /** System + user prompt for one generation request. The user's text is quoted as DATA, never as instructions. */
 export function buildPrompts(req: GenerateRequest): { system: string; user: string; limit: number; max: number } {
   const limit = targetLimit(req.platforms);
@@ -139,11 +142,11 @@ export function buildPrompts(req: GenerateRequest): { system: string; user: stri
 
   let user: string;
   if (req.mode === "create") {
-    user = `<task>Write ${req.count} social media post${req.count > 1 ? "s" : ""} about the following.</task>\n<brief>\n${req.brief}\n</brief>`;
+    user = `<task>Write ${req.count} social media post${req.count > 1 ? "s" : ""} about the following.</task>\n<brief>\n${fence(req.brief)}\n</brief>`;
   } else {
     const action = REWRITE_ACTIONS.find((a) => a.id === req.action)!;
-    const extra = req.brief ? `\n<brief>\n${req.brief}\n</brief>` : "";
-    user = `<task>${action.instruction} Return ${req.count} variant${req.count > 1 ? "s" : ""}.</task>${extra}\n<text>\n${req.text}\n</text>`;
+    const extra = req.brief ? `\n<brief>\n${fence(req.brief)}\n</brief>` : "";
+    user = `<task>${action.instruction} Return ${req.count} variant${req.count > 1 ? "s" : ""}.</task>${extra}\n<text>\n${fence(req.text)}\n</text>`;
   }
   return { system, user, limit, max };
 }
@@ -161,7 +164,7 @@ export function buildShortenPrompt(text: string, platforms: readonly Platform[])
       '- Answer with ONLY a JSON object: {"variants":[{"text":"..."}]} with exactly 1 variant.',
       "</rules>",
     ].join("\n"),
-    user: `<text>\n${text}\n</text>`,
+    user: `<text>\n${fence(text)}\n</text>`,
   };
 }
 
