@@ -1,5 +1,6 @@
 @echo off
-REM Orvane dev sunucusu (localhost:3055). HTTPS tüneli (orvane-dev.fatihgo.com) bunu dışarı açar.
+REM Orvane dev sunucusu (localhost:3055). HTTPS tuneli (orvane-dev.fatihgo.com) bunu disari acar.
+REM Bu dosya ASCII + CRLF kalmali: cmd, LF satir sonlu ve UTF-8 cok baytli karakter iceren .cmd dosyasini yanlis ayristirir (satirlarin basi kaybolur, cd/set calismaz).
 set "PATH=C:\Program Files\nodejs;%PATH%"
 set INNGEST_DEV=1
 cd /d "C:\Users\Fatih\orvane"

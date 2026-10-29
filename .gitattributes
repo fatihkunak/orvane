@@ -1,1 +1,3 @@
 *.sh text eol=lf
+# cmd misparses LF batch files that contain multibyte characters (lines lose their first bytes)
+*.cmd text eol=crlf
