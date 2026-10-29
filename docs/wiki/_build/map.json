@@ -278,7 +278,10 @@
     "paths": [
       "inngest/client.ts",
       "inngest/functions.ts",
-      "app/api/inngest/route.ts"
+      "app/api/inngest/route.ts",
+      "lib/inngest-guard.ts",
+      "deploy/start-inngest.cmd",
+      "tests/inngest-guard.test.ts"
     ],
     "missing": [],
     "noCode": false
