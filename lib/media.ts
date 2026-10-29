@@ -26,6 +26,12 @@ export function absoluteMediaUrl(url: string): string {
   return new URL(url, base).toString();
 }
 
+/** False for addresses only this machine can reach; platforms that download media themselves (Threads) need a public one. */
+export function isPublicMediaUrl(url: string): boolean {
+  const host = new URL(absoluteMediaUrl(url)).hostname;
+  return !(host === "localhost" || host === "127.0.0.1" || host.endsWith(".local"));
+}
+
 const LOCAL_MEDIA_PREFIX = "/api/media/";
 const LOCAL_MEDIA_NAME = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|png|gif|mp4)$/;
 

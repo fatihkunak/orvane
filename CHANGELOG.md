@@ -15,6 +15,8 @@ Bu dosya [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) biçimini izle
 - **404:** başarısız gönderinin bildirimi ve takvim satırındaki kalem, düzenlenemeyen gönderiye götürüyordu. Bildirim takvime gider, kalem yalnız taslak ve zamanlanmış gönderide görünür.
 - **Yayın hattı:** geçici token yenileme hatası (ağ, 5xx, 429) gönderiyi kalıcı FAILED yapıyordu, artık yeniden denenir. Düz metin token Inngest adım çıktısına yazılmıyor.
 - **X karakter sayımı:** URL 23, emoji ve CJK 2 sayılır (twitter-text ağırlıkları).
+- **Hesaplar:** X hesabı 2 saatlik erişim token'ının geçmiş tarihini "geçerlilik" diye gösterip süresi dolmuş gibi görünüyordu; artık "oturum otomatik yenilenir". Kendini yenileyemeyen token bitmeden 7 gün önce uyarır, süresi dolan "Süresi doldu" rozeti alır.
+- **Ayarlar → Kurulum durumu:** Cloudinary yokken "Threads çalışmaz" diyordu; uygulama herkese açık bir adreste (`APP_URL`) sunuluyorsa yerel dosyalar Threads'e de gider. Uyarı artık yalnız gerçekten çalışmayacaksa çıkar.
 
 ### Güvenlik
 

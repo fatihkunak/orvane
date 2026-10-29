@@ -3,7 +3,7 @@ import { decrypt, encrypt } from "@/lib/crypto";
 import { countChars, overLimit } from "@/lib/char-count";
 import { createPostSchema } from "@/lib/validation/post";
 import { derivePostStatus } from "@/lib/publishing";
-import { needsRefresh } from "@/lib/social/tokens";
+import { needsRefresh, tokenStatus } from "@/lib/social/tokens";
 import {
   buildAuthorizeUrl,
   exchangeCode,
@@ -12,7 +12,7 @@ import {
   refreshTokenSet,
 } from "@/lib/social/providers";
 import { escapeLittleText } from "@/lib/social/publishers/linkedin";
-import { isAllowedMediaUrl, matchesSignature } from "@/lib/media";
+import { isAllowedMediaUrl, isPublicMediaUrl, matchesSignature } from "@/lib/media";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -130,6 +130,21 @@ describe("token refresh policy", () => {
   });
   it("never refreshes tokens without an expiry", () => {
     expect(needsRefresh("twitter", { expiresAt: null, updatedAt: at(-d(9)), hasRefreshToken: true }, now)).toBe(false);
+  });
+
+  it("status: an X token past its 2 hours is still a working, self-renewing connection", () => {
+    expect(tokenStatus("twitter", { expiresAt: at(-d(8)), hasRefreshToken: true }, now)).toEqual({ kind: "auto" });
+    expect(tokenStatus("twitter", { expiresAt: at(-1), hasRefreshToken: false }, now)).toEqual({ kind: "expired" });
+  });
+  it("status: warns only when the token cannot renew itself", () => {
+    expect(tokenStatus("linkedin", { expiresAt: at(d(3)), hasRefreshToken: false }, now).kind).toBe("expiring");
+    expect(tokenStatus("linkedin", { expiresAt: at(d(3)), hasRefreshToken: true }, now).kind).toBe("ok");
+    expect(tokenStatus("threads", { expiresAt: at(d(3)), hasRefreshToken: false }, now).kind).toBe("ok");
+    expect(tokenStatus("linkedin", { expiresAt: at(d(30)), hasRefreshToken: false }, now).kind).toBe("ok");
+  });
+  it("status: an expired Threads or LinkedIn token needs a reconnect", () => {
+    expect(tokenStatus("threads", { expiresAt: at(-1), hasRefreshToken: false }, now)).toEqual({ kind: "expired" });
+    expect(tokenStatus("linkedin", { expiresAt: at(-d(1)), hasRefreshToken: true }, now)).toEqual({ kind: "expired" });
   });
 });
 
@@ -280,6 +295,14 @@ describe("media allow-list (SSRF guard)", () => {
     ]) {
       expect(isAllowedMediaUrl(bad), bad).toBe(false);
     }
+  });
+
+  it("a local upload is public only when the app itself is served from a public address", () => {
+    vi.stubEnv("APP_URL", "https://orvane.example.com");
+    expect(isPublicMediaUrl(local)).toBe(true);
+    vi.stubEnv("APP_URL", "http://localhost:3055");
+    expect(isPublicMediaUrl(local)).toBe(false);
+    expect(isPublicMediaUrl("https://res.cloudinary.com/mycloud/image/upload/a.png")).toBe(true);
   });
 
   it("accepts only OUR Cloudinary account over https", () => {

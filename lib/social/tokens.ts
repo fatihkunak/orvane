@@ -45,6 +45,28 @@ export function needsRefresh(
   return left < 7 * DAY && now - a.updatedAt.getTime() > DAY;
 }
 
+export type TokenStatus =
+  | { kind: "auto" } // short-lived token renewed before every publish (X)
+  | { kind: "ok"; expiresAt: Date | null }
+  | { kind: "expiring"; expiresAt: Date } // cannot renew itself: the user must reconnect before this date
+  | { kind: "expired" };
+
+/** What the accounts page tells the user about a connection, following the same rules as `needsRefresh`. */
+export function tokenStatus(
+  slug: "twitter" | "linkedin" | "threads",
+  a: { expiresAt: Date | null; hasRefreshToken: boolean },
+  now = Date.now(),
+): TokenStatus {
+  if (slug === "twitter" && a.hasRefreshToken) return { kind: "auto" };
+  if (!a.expiresAt) return { kind: "ok", expiresAt: null };
+  const left = a.expiresAt.getTime() - now;
+  if (left <= 0) return { kind: "expired" };
+  // Threads tokens and LinkedIn refresh tokens are renewed by the daily job while still valid
+  const renews = slug === "threads" || (slug === "linkedin" && a.hasRefreshToken);
+  if (!renews && left < 7 * DAY) return { kind: "expiring", expiresAt: a.expiresAt };
+  return { kind: "ok", expiresAt: a.expiresAt };
+}
+
 type Account = Awaited<ReturnType<typeof prisma.socialAccount.findUniqueOrThrow>>;
 
 const isExpired = (a: Account) => a.expiresAt !== null && a.expiresAt.getTime() <= Date.now();

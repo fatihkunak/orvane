@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { AppKeysForm } from "@/components/platform/app-keys-form";
 import { BRING_YOUR_OWN, credentialStatus, resolveCredentials } from "@/lib/social/app-credentials";
 import { PROVIDERS, isProviderSlug } from "@/lib/social/providers";
+import { tokenStatus } from "@/lib/social/tokens";
 import { cn } from "@/lib/utils";
 
 export const metadata = { title: "Hesaplar" };
@@ -90,19 +91,31 @@ export default async function AccountsPage({
               )
             )}
 
-            {mine.map((a) => (
-              <div key={a.id} className="bg-surface-2 flex items-center gap-3 rounded-xl p-3">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{a.displayName ?? a.username ?? a.platformUserId}</p>
-                  <p className="text-muted-foreground truncate text-xs">
-                    {a.username ? `@${a.username}` : p.label}
-                    {a.expiresAt && ` · geçerlilik ${a.expiresAt.toLocaleDateString("tr-TR")}`}
-                  </p>
+            {mine.map((a) => {
+              const status = tokenStatus(p.slug, { expiresAt: a.expiresAt, hasRefreshToken: !!a.refreshToken });
+              return (
+                <div key={a.id} className="bg-surface-2 flex items-center gap-3 rounded-xl p-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{a.displayName ?? a.username ?? a.platformUserId}</p>
+                    <p className="text-muted-foreground truncate text-xs">
+                      {a.username ? `@${a.username}` : p.label}
+                      {status.kind === "auto" && " · oturum otomatik yenilenir"}
+                      {status.kind === "ok" && status.expiresAt && ` · geçerlilik ${status.expiresAt.toLocaleDateString("tr-TR")}`}
+                      {status.kind === "expiring" && (
+                        <span className="text-amber-400"> · {status.expiresAt.toLocaleDateString("tr-TR")} tarihinde bitiyor, yeniden bağla</span>
+                      )}
+                      {status.kind === "expired" && <span className="text-destructive"> · süresi doldu, yeniden bağla</span>}
+                    </p>
+                  </div>
+                  {status.kind === "expired" ? (
+                    <span className="bg-destructive/15 text-destructive rounded-full px-2 py-0.5 text-[11px] font-medium">Süresi doldu</span>
+                  ) : (
+                    <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-medium text-emerald-400">Bağlı</span>
+                  )}
+                  <DisconnectButton accountId={a.id} label={p.label} />
                 </div>
-                <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-medium text-emerald-400">Bağlı</span>
-                <DisconnectButton accountId={a.id} label={p.label} />
-              </div>
-            ))}
+              );
+            })}
           </section>
         );
       })}

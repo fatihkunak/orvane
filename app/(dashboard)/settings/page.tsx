@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { VersionCard } from "@/components/settings/version-card";
 import { DeleteAccount } from "@/components/settings/delete-account";
 import { PROVIDERS, credentials } from "@/lib/social/providers";
+import { isPublicMediaUrl } from "@/lib/media";
 import { isUpdateOwner, updateEnabled } from "@/lib/update";
 
 export const metadata = { title: "Ayarlar" };
@@ -20,7 +21,16 @@ function checklist() {
     { label: "Token şifreleme anahtarı", hint: "TOKEN_ENCRYPTION_KEY", ok: !!process.env.TOKEN_ENCRYPTION_KEY },
     { label: "Yönetim API'si (fatihgo paneli)", hint: "ORVANE_ADMIN_TOKEN (en az 32 karakter); yoksa panel Orvane'e bağlanamaz", ok: (process.env.ORVANE_ADMIN_TOKEN ?? "").length >= 32 },
     { label: "Giriş (Google)", hint: "AUTH_GOOGLE_ID, AUTH_GOOGLE_SECRET", ok: !!(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET) },
-    { label: "Medya depolama (Cloudinary)", hint: "CLOUDINARY_URL; yoksa yerel dosya kullanılır, Threads çalışmaz", ok: !!process.env.CLOUDINARY_URL },
+    process.env.CLOUDINARY_URL
+      ? { label: "Medya depolama (Cloudinary)", hint: "CLOUDINARY_URL", ok: true }
+      : {
+          label: "Medya depolama (yerel)",
+          // Threads downloads media itself: a local file works only when this app is served from a public address
+          hint: isPublicMediaUrl("/api/media/")
+            ? "Dosyalar bu sunucuda; Threads görselleri herkese açık APP_URL'den indirir (yayın anında sunucu açık olmalı)"
+            : "CLOUDINARY_URL ya da herkese açık bir APP_URL gerekir; yoksa Threads'e görsel gönderilemez",
+          ok: isPublicMediaUrl("/api/media/"),
+        },
     { label: "Zamanlanmış yayın (Inngest)", hint: "INNGEST_EVENT_KEY, INNGEST_SIGNING_KEY (yerelde Inngest Dev Server yeter)", ok: !!(process.env.INNGEST_EVENT_KEY && process.env.INNGEST_SIGNING_KEY) },
     {
       label: "Tek tıkla güncelleme",

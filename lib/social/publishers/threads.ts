@@ -7,7 +7,7 @@ import {
   type PublishInput,
   type PublishResult,
 } from "./shared";
-import { absoluteMediaUrl, mediaKind } from "@/lib/media";
+import { absoluteMediaUrl, isPublicMediaUrl, mediaKind } from "@/lib/media";
 
 const API = "https://graph.threads.com/v1.0";
 
@@ -30,12 +30,10 @@ async function post(path: string, ctx: PublishContext, params: Record<string, st
 
 /** Threads downloads the media itself, so every URL has to be reachable from the public internet. */
 function publicUrl(url: string): string {
-  const abs = absoluteMediaUrl(url);
-  const host = new URL(abs).hostname;
-  if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".local")) {
+  if (!isPublicMediaUrl(url)) {
     throw new PublishError("Threads medya URL'si herkese açık olmalı (yerel dosya olamaz); Cloudinary'yi yapılandır", false);
   }
-  return abs;
+  return absoluteMediaUrl(url);
 }
 
 /**
