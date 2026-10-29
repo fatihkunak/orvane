@@ -16,6 +16,7 @@ Next.js (App Router) · TypeScript · Tailwind v4 · shadcn/ui · Prisma 7 + Pos
 - **MCP:** LM Studio, Claude Code gibi istemciler kişisel belirteçle bağlanıp taslak hazırlar, ileri tarihe **zamanlar** (`schedule_post`) ve yalnızca açık onayla var olan bir taslağı **hemen yayınlar** (`publish_now`, `confirm: true` olmadan çalışmaz; tek çağrıda yazıp gönderme yok).
 - **Takvim, ana sayfa, analitik** (yalnızca Orvane'in kendi yayın verisi). Takvimdeki yayınlanmamış gönderiyi düzenleyebilir, saatini hızlıca değiştirebilirsin.
 - **Bildirim zili ve profil menüsü:** başarısız yayınlar + önümüzdeki 24 saatte çıkacak gönderiler; hesap, ayarlar ve çıkış tek menüde.
+- **Başarısız gönderiyi düzelt ve yeniden dene:** yalnızca başarısız olan platformlar yeniden gönderilir; yayınlanmış bir platforma aynı gönderi bir daha gitmez.
 
 ## Kurulum (yerel geliştirme)
 
@@ -32,7 +33,7 @@ npx prisma migrate dev          # veritabanı şemasını kurar
 npm run dev                     # http://localhost:3000
 
 # Zamanlanmış yayın için ayrı bir terminalde:
-npx inngest-cli@latest dev -u http://localhost:3000/api/inngest
+npx --yes inngest-cli@1.49.0 dev -u http://localhost:3000/api/inngest
 ```
 
 > **5432 doluysa** (başka bir Postgres ya da Docker projesi): `ORVANE_DB_PORT=5546 docker compose up -d` ve `.env`'de adresi `:5546` yap. Aynı makinede iki klon sorunsuz çalışır; konteyner adı sabit değildir.
@@ -110,7 +111,7 @@ Konteyner adı senin kurulumunda farklıysa (`docker ps`) onu yaz. Cloudinary'de
 2. **Hesap bağlama:** `/api/connect/<twitter|linkedin|threads>` → platformun onay ekranı → callback token'ları AES-256-GCM ile şifreleyip `SocialAccount`'a yazar. X için PKCE, tüm akışlarda `state` + httpOnly çerez ile CSRF koruması.
 3. **Gönderi:** `/posts/new` formu; platform başına karakter sınırı, medya yükleme, taslak / zamanla / şimdi yayınla.
 4. **Yayın:** Inngest her dakika `SCHEDULED` ve zamanı gelmiş gönderileri bulur, her biri için `post/publish.requested` olayı üretir. `publish-post` fonksiyonu her platformu ayrı adımda yayınlar; bir platformun hatası diğerlerini engellemez. Çift gönderim, veritabanında atomik "claim" ile engellenir.
-5. **Token yenileme:** X token'ı (2 saat) yayından hemen önce, Threads/LinkedIn günlük işle yenilenir.
+5. **Token yenileme:** X token'ı (2 saat) yayından hemen önce, Threads/LinkedIn günlük işle yenilenir. Aynı hesabın yenilemesi Postgres advisory lock ile sıraya girer (X yenileme belirteci tek kullanımlıktır).
 
 Ayrıntılı mimari: [`docs/wiki/`](docs/wiki/Index.md).
 
@@ -139,7 +140,9 @@ Platform çağrıları testlerde sahte `fetch` ile doğrulanır. Gerçek hesapla
 ## Önemli notlar
 
 - `prisma` CLI ve `@prisma/client` aynı sürüme sabit (7.10.1); `prisma@latest` şu an 8.0 RC.
-- Medya adresleri yalnızca bu uygulamanın yüklemeleri ya da kendi Cloudinary hesabın olabilir (SSRF koruması, `lib/media.ts`).
+- Medya adresleri yalnızca bu uygulamanın yüklemeleri ya da kendi Cloudinary hesabın olabilir (SSRF koruması, `lib/media.ts`). Dış istekler çözülen IP'yi bağlantının kendisinde doğrular (DNS rebinding'e karşı), yükleme gövdesi akarken sınırlanır.
+- Inngest imzasız (dev) moddayken `/api/inngest` yalnızca yerel Dev Server'a açıktır; Cloudflare tünelinden gelen istek reddedilir (`lib/inngest-guard.ts`). Üretimde `INNGEST_SIGNING_KEY` tanımla.
+- Inngest CLI `1.49.0`'a sabit: `@latest` ile `npx` kurulum sorusunda takılıp zamanlanmış yayını durdurabiliyor.
 - Yapay zekâ için yerel sunuculara (Ollama, LM Studio) bağlanmak `ALLOW_PRIVATE_LLM_URLS=1` ister ve yalnızca kendi bilgisayarında, dışarıya açık olmayan bir kurulumda açılmalıdır.
 - Yönetim API'si (`/api/admin/*`) `ORVANE_ADMIN_TOKEN` (en az 32 karakter) tanımlı değilse kapalıdır.
 - MCP belirteci verdiğin istemci, var olan bir taslağı `publish_now` ile **gerçekten yayınlayabilir**. Araç `confirm: true` olmadan çalışmaz ve metin parametresi almaz (yayınlanan metin taslaktaki metindir), ama yine de belirteci yalnız güvendiğin istemciye ver.

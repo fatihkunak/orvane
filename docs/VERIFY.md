@@ -2,7 +2,7 @@
 
 Otomatik testler para/hesap gerektiren yolları kapsamaz. Bu liste, **yeni bir tarayıcı oturumunda** (gizli pencere) sırayla yapılacak kabul kontrolüdür. Her adımda "beklenen" yazıyor; tutmazsa yanındaki ipucuna bak.
 
-> İlk kurulumda `.env` dolu, `docker compose up -d` çalışıyor, `npm run dev` + `npx inngest-cli@latest dev` açık olmalı.
+> İlk kurulumda `.env` dolu, `docker compose up -d` çalışıyor, `npm run dev` + `npx --yes inngest-cli@1.49.0 dev` açık olmalı.
 
 ## 1. Giriş
 
