@@ -46,12 +46,6 @@ const nextConfig: NextConfig = {
           { key: "Content-Security-Policy-Report-Only", value: csp },
         ],
       },
-      // Dev chunks keep their URL when their code changes. Behind the Cloudflare tunnel "no-cache" is rewritten to the zone's
-      // 4-hour browser TTL, so browsers ran stale JS after every change or update; "no-store" is passed through untouched.
-      // Production chunks are content-hashed and immutable, so this applies to `next dev` only.
-      ...(process.env.NODE_ENV === "production"
-        ? []
-        : [{ source: "/_next/static/:path*", headers: [{ key: "Cache-Control", value: "no-store, must-revalidate" }] }]),
     ];
   },
 };

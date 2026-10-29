@@ -124,7 +124,7 @@ export function Topbar({ user, notifications, hasFailure, signOutAction }: Topba
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <form action={signOutAction}>
-              <DropdownMenuItem variant="destructive" render={<button type="submit" className="w-full" />}>
+              <DropdownMenuItem variant="destructive" nativeButton render={<button type="submit" className="w-full" />}>
                 <LogOut className="size-4" /> Çıkış yap
               </DropdownMenuItem>
             </form>
