@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -62,31 +63,34 @@ export function Topbar({ user, notifications, hasFailure, signOutAction }: Topba
             {hasFailure && <span className="bg-destructive absolute top-2 right-2 size-2 rounded-full" aria-hidden />}
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-80">
-            <DropdownMenuLabel>Bildirimler</DropdownMenuLabel>
-            {notifications.length === 0 ? (
-              <p className="text-muted-foreground px-1.5 py-3 text-sm">Şimdilik bir şey yok. Başarısız yayınlar ve önümüzdeki 24 saatte çıkacak gönderiler burada görünür.</p>
-            ) : (
-              notifications.map((n) => (
-                <DropdownMenuItem
-                  key={`${n.kind}-${n.id}`}
-                  className="items-start gap-2 py-2"
-                  render={<Link href="/calendar" />}
-                >
-                  {n.kind === "failed" ? (
-                    <AlertTriangle className="text-destructive mt-0.5 size-4 shrink-0" />
-                  ) : (
-                    <CalendarClock className="text-brand-mist mt-0.5 size-4 shrink-0" />
-                  )}
-                  <span className="min-w-0 space-y-0.5">
-                    <span className="text-muted-foreground block text-xs">
-                      {n.kind === "failed" ? "Yayınlanamadı" : format(new Date(n.at), "d MMM HH:mm", { locale: tr })}
+            {/* Base UI throws when a GroupLabel renders outside a Group */}
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Bildirimler</DropdownMenuLabel>
+              {notifications.length === 0 ? (
+                <p className="text-muted-foreground px-1.5 py-3 text-sm">Şimdilik bir şey yok. Başarısız yayınlar ve önümüzdeki 24 saatte çıkacak gönderiler burada görünür.</p>
+              ) : (
+                notifications.map((n) => (
+                  <DropdownMenuItem
+                    key={`${n.kind}-${n.id}`}
+                    className="items-start gap-2 py-2"
+                    render={<Link href="/calendar" />}
+                  >
+                    {n.kind === "failed" ? (
+                      <AlertTriangle className="text-destructive mt-0.5 size-4 shrink-0" />
+                    ) : (
+                      <CalendarClock className="text-brand-mist mt-0.5 size-4 shrink-0" />
+                    )}
+                    <span className="min-w-0 space-y-0.5">
+                      <span className="text-muted-foreground block text-xs">
+                        {n.kind === "failed" ? "Yayınlanamadı" : format(new Date(n.at), "d MMM HH:mm", { locale: tr })}
+                      </span>
+                      <span className="block truncate text-sm">{n.text || "(medya)"}</span>
+                      {n.error && <span className="text-destructive block truncate text-xs">{n.error}</span>}
                     </span>
-                    <span className="block truncate text-sm">{n.text || "(medya)"}</span>
-                    {n.error && <span className="text-destructive block truncate text-xs">{n.error}</span>}
-                  </span>
-                </DropdownMenuItem>
-              ))
-            )}
+                  </DropdownMenuItem>
+                ))
+              )}
+            </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem render={<Link href="/calendar" />}>
               <CalendarClock className="size-4" /> Takvimi aç
@@ -102,10 +106,12 @@ export function Topbar({ user, notifications, hasFailure, signOutAction }: Topba
             </Avatar>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel className="py-2">
-              <span className="text-foreground block truncate text-sm font-medium">{user.name ?? "Kullanıcı"}</span>
-              {user.email && <span className="block truncate text-xs font-normal">{user.email}</span>}
-            </DropdownMenuLabel>
+            <DropdownMenuGroup>
+              <DropdownMenuLabel className="py-2">
+                <span className="text-foreground block truncate text-sm font-medium">{user.name ?? "Kullanıcı"}</span>
+                {user.email && <span className="block truncate text-xs font-normal">{user.email}</span>}
+              </DropdownMenuLabel>
+            </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem render={<Link href="/settings" />}>
               <User className="size-4" /> Profil ve ayarlar
