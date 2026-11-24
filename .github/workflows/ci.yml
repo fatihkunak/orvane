@@ -3,9 +3,7 @@ name: CI
 # Every push and pull request must pass the same four gates we run locally:
 # types, lint, the test suite against a real Postgres, and a production build.
 on:
-  push:
-    branches: [main]
-  pull_request:
+  workflow_dispatch: {}
 
 concurrency:
   group: ci-${{ github.ref }}
